@@ -1,0 +1,116 @@
+# Compact room art for nakatomi.json (narrow screens, e.g. phones).
+# Used when the terminal is narrower than 80 columns.
+# Keep lines under 58 columns. [n] labels match the exit numbers in 'look'.
+
+== plaza ==
+  *    .   Christmas Eve, Century City   .    *
+  \o*/      ______NAKATOMI______        \*o/
+ -*o*o-    |[] [][] [][] [][] []|      -o*o*-
+  /|*\     |32: dark            |       /|o\
+   |*      |o*o 30: party o*o*o*|        |*
+     *     |[][] [][] [][] [][] |
+    /o\    |______.=[1]=._______|  .--[2]--.
+   /~*~\         lobby doors       | garage|
+  /o~@~o\     __      __           |  gate |
+ /*~o~*~o\   /=o\_   /=o\_  LAPD   |=======|
+    |_|      'O--O'  'O--O'
+ =================================================
+
+== helipad ==
+   ----==== thwup  thwup  thwup ====----
+        LAPD AIR   ||  ropes  ||
+                   ||         ||
+   .--------------------------------------------.
+   | [c4][c4][c4]      .------.      stair      |
+   |                  /   H    \     bulkhead   |
+   |                  \helipad /       [==]     |
+   | [1] fast-rope     '------'                 |
+   '--------------------------------------------'
+
+== lobby ==
+     [1] lobby doors (behind you)
+  _@~~~~~@~~~~~@~~~~~@~~~~~@~~~~~@~~~~~@~~~~~@~~~_
+ | [2]  N A K A T O M I     *              [3]  |
+ | svc   ____________      /o\     ~carols~ fire|
+ | corr |  SECURITY  |    /~*~\    ( ~~~ )  stair|
+ |      |____________|   /o~@~o\   |fntn |      |
+ |                      /*~o~*~o\  |_____|      |
+ |                      [#][%][#]                |
+ |__[%][#]___________________________[wreath]____|
+
+== garage ==
+     [2] service corridor (behind you)
+  ________________________________________________
+ |  ________   .------[1]------.   ________     |
+ | | PACIFIC|  |===============|  | + AMB  |    |
+ | | COURIER|  |---------------|  | doors  |    |
+ | |________|  |=====gate======|  |__open__|    |
+ |  (O)  (O)   |_______________|   (O)  (O)     |
+ |  ______                          ~ music ~   |
+ |_|LIMO  |~_______________________________[oil]|
+
+== stairwell ==
+     [1] down to the lobby (behind you)
+  ________________________________________________
+ |                               ____| [4] roof   |
+ |  ^ thirty floors ^       ____|                 |
+ |                     ____| [3] 32nd             |
+ |                ____|                           |
+ |           ____| [2] 30th floor                 |
+ |      ____|                                     |
+ |__[HO-HO-HO]__________________________(tinsel)__|
+
+== party ==
+     [1] 30th floor door (behind you)
+  o~.~o~.~o~.~o~.~o~.~o~.~o~.~o~.~o~.~o~.~o~.~o~.~
+ | *~ MERRY CHRISTMAS NAKATOMI ~*      *     [2]  |
+ |  o   O    o   O   ( ) ( )         /o\   comp |
+ |  |   |    |   |    |   |         /~*~\  room |
+ |  ______________                 /o~@~o\      |
+ | | ~ buffet ~   |               /*~o~*~o\     |
+ | |[eggnog][ham] |               [#][%][#]     |
+ |__(hats)_______________________(cake)(confet)_|
+
+== computer ==
+     [1] computer room door (behind you)
+  ________________________________________________
+ | .----..----..----.    .----------.    .-----.  |
+ | |::::||#  #||1010|   / V A U L T  \   |=[2]=|  |
+ | '----''----''----'  | [o][o][o][o] |  '-----'  |
+ |  ______________     | [o][o][ ]    |   vent    |
+ | |[laptop]=wires==>   \ seven locks/            |
+ | |______________|      '----------'             |
+ |__[cable]_________o*o tinsel o*o________(mug)___|
+
+== ducts ==
+     [1] air duct to the 32nd floor (behind you)
+  ________________________________________________
+ | +--------------------------------------------+ |
+ | |   <  <  < draft     .--[2]--.              | |
+ | |                     |#vent##|    light >   | |
+ | |   zippo glow        '-------'              | |
+ | +--------------------------------------------+ |
+ |__(lighter)___________________________[bag]_____|
+
+== unfinished ==
+     [1] 32nd floor door (behind you)
+  ________________________________________________
+ | [2] |   .  *  city lights  *  .  |    |    |  |
+ | duct|  _|___|___|_   ) plastic (     *    |  |
+ |     |   | scaff |    ) sheeting )   /o\   |  |
+ |     |  _|___|___|_    |    |     /*~@\  |  |
+ |     |    |    |       |    |    /~o~*~\ |  |
+ |     |    |    |       |    |      |_|   |  |
+ |__(chair)______________________(glass)[shoes?]__|
+
+== roof ==
+     [1] above you: the helicopter
+  *    .     *   the roof, Christmas Eve   .    *
+  ________________________________________________
+ |[c4]--[c4]--[c4]--[c4]--[c4]--[c4]--[c4]--[c4]--|
+ |      .-------.                     _________   |
+ |     /    H    \                   |  [2]    |  |
+ |     \ helipad /  wires -> [box]   |roof door|  |
+ |      '-------'                    |_________|  |
+ |================================================|
+ | (antenna)                             [spool]  |

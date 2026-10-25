@@ -50,6 +50,8 @@ def load_scenario(scenario_id: str) -> Scenario:
         npcs=npcs,
         evidence=evidence,
         departure=data.get("departure"),
+        banners=data.get("banners", {}),
+        headlines=data.get("headlines", {}),
         art=load_room_art(SCENARIO_DIR / f"{scenario_id}.art"),
         art_compact=load_room_art(SCENARIO_DIR / f"{scenario_id}.compact.art"),
     )

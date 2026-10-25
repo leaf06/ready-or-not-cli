@@ -160,7 +160,10 @@ class Game:
         return self._dist_cache[a].get(b, 99)
 
     def label(self, n: NPC) -> str:
-        if n.identified or n.state == HOSTILE or n.weapon_visible:
+        # A visible weapon marks a suspect, but an armed civilian (say, an
+        # off-duty cop) stays "Unknown" until secured: that's the ROE test.
+        if (n.identified or n.state == HOSTILE
+                or (n.weapon_visible and n.kind == "suspect")):
             who = n.kind.capitalize()
         else:
             who = "Unknown"

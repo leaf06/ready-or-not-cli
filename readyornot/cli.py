@@ -151,9 +151,11 @@ def debrief(game: Game) -> None:
     rule("title")
     headline = {"complete": "MISSION COMPLETE", "incomplete": "MISSION ENDED: objectives incomplete",
                 "departed": "MISSION FAILED: the suspects got away",
-                "kia": "MISSION FAILED: element lead KIA"}[game.outcome]
+                "kia": "MISSION FAILED: element lead KIA",
+                **game.scenario.headlines}[game.outcome]
     if Settings.art:
-        print(paint("\n".join(art.BANNERS[game.outcome]),
+        banner = game.scenario.banners.get(game.outcome) or art.BANNERS[game.outcome]
+        print(paint("\n".join(banner),
                     "danger" if game.outcome == "kia" else "alert"))
     out(headline, "danger" if game.outcome == "kia" else "title")
     out(f"Time on target: {game.clock} · {T.DIFFICULTIES[game.difficulty]['label']}", "dim")
