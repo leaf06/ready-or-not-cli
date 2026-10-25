@@ -1,17 +1,22 @@
-# Ready or Not: Terminal Tactical (v0.2.0)
+# Ready or Not: Terminal Tactical (v0.3.0)
 
 A turn-based, text-command SWAT game for the macOS Terminal, inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
 You mirror doors, breach, throw flashbangs, order suspects and civilians to
 comply, follow the rules of engagement, and get graded on how cleanly you did it.
 
-Two scenarios so far:
+Three scenarios so far:
 
 - **4180 Larkspur Lane** (Moderate): a narcotics warrant on a house with a basement drug lab.
 - **Delta Bottling Co.** (Hard): a raid on a Nuke packaging plant, an homage to the Nuke lab
   raid in *RoboCop 2*. Cain, Angie and the juvenile Hob will run for the loading dock the
   moment things get loud, and you can't use deadly force on Hob even when he's shooting at
   you. Plan the dock before you plan the breach.
+- **M/Y Biscayne Lady** (Hard): a money-laundering bust on a drug kingpin's yacht at a Miami
+  Beach marina, an homage to the *Miami Vice* episode "Payback" (season 2, 1986), where Fuente
+  runs every deal from his boat so the money can go over the side at the first sign of trouble.
+  The yacht is getting ready to leave: take the bridge before the captain casts off, stun the
+  salon before the cash goes overboard, and hold the stern so Fuente can't reach the tender.
 
 ## Run it
 
@@ -102,6 +107,8 @@ already complied.
 - **Covering up** (Medium and Hard). Aggressive suspects sometimes see a grenade coming and aren't stunned. Check for `stunned` before you trust it.
 - **Point man.** On the turn you come through a door, you're the one most likely to be shot at.
 - **Runners** (Delta Bottling Co.). Some suspects head for an escape door once alerted. If they get out, they're gone and the objective fails. A wedged door, or the team standing outside it, stops them.
+- **Departure clock** (Biscayne Lady). The captain is prepping to leave and will cast off after a set number of turns, much sooner once he's alerted. If the yacht leaves, the mission fails. A captain who's out of action, or off the helm, stops the clock. `status` shows the time left, and TOC calls it out.
+- **Dumping evidence** (Biscayne Lady). Some suspects destroy evidence once alerted and you're in the room with them. A stunned dumper can't.
 - **Juveniles** (Delta Bottling Co.). Deadly force on a juvenile is never authorized, even if they're shooting at you. Tase them or talk them down. Their figures read `KID+GUN` / `KID AIMS`.
 - **Crits.** Some hits find a gap in the armor and ignore it. Walking into an unscouted room can kill you.
 - **Scarce kit.** On Medium and Hard, loadouts carry fewer grenades than there are rooms, so decide where they count.
@@ -137,7 +144,10 @@ Baseline on the current numbers (1,000 runs each):
 The tactical bot plays close to perfectly, so expect human scores to be lower.
 Pass `--scenario nuke_lab` to simulate Delta Bottling Co. The bots don't plan
 for runners, so they rarely complete it. Wedging the dock first (from the
-alley) is what makes it winnable.
+alley) is what makes it winnable. The same goes for `--scenario biscayne_lady`:
+the bots ignore the bridge, so the yacht usually leaves. Taking the bridge,
+then the salon, then holding the swim platform completes it in about 63% of
+Medium runs.
 
 ## Adding scenarios
 
@@ -148,7 +158,8 @@ template:
 - **rooms**: an `entry: true` room is a starting point, and `outdoor` rooms are off-limits to suspects
 - **doors**: `kind` is `door` or `opening`, plus optional `locked` and `trap` (`flash` / `explosive`)
 - **doors**: also optional `escape: true` for a door runners can flee through
-- **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon` (`pistol`, `shotgun`, `rifle`, `smg`, `knife`), `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware`, `alert`, or `surrendered` with `bound: true` for someone tied up). `escapes: true` makes them run for an escape door, and `minor: true` makes deadly force against them unauthorized.
+- **departure** (optional): `{"ticks": 45, "pilot": "<npc id>", "alert_rate": 3, ...}` gives the scenario a clock that runs while the pilot is free at their starting room; see `biscayne_lady.json`
+- **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon` (`pistol`, `shotgun`, `rifle`, `smg`, `knife`), `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware`, `alert`, or `surrendered` with `bound: true` for someone tied up). `escapes: true` makes them run for an escape door, `dumps: true` makes them destroy evidence, and `minor: true` makes deadly force against them unauthorized.
 - **evidence**: objective items to collect
 - **art** (optional): `<scenario_id>.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `<scenario_id>.compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
 

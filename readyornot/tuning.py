@@ -102,6 +102,10 @@ SURRENDER_LAPSE_CHANCE = 0.20   # per tick, an uncuffed suspect you left behind 
 ROAM_CHANCE = 0.18              # per tick, an alert suspect moves to a neighbouring room
 ESCAPE_MOVE_CHANCE = 0.35       # per tick, an alerted runner moves a room closer to the exit
 ESCAPE_CHANCE = 0.50            # per tick, a runner at an unwedged escape door gets out
+DUMP_CHANCE = 0.15              # per tick, an alerted dumper destroys evidence in their room...
+DUMP_RANGE = 0                  # ...once the team is this many rooms away or closer (0 = same room)
+DEPARTURE_MULT = 1.0            # scales a scenario's departure clock
+DEPARTURE_WARNINGS = (20, 10, 5)  # TOC calls out these many ticks left
 FLANK_HOSTILE_CHANCE = 0.70     # x aggression: a roaming suspect walks in weapon-up
 
 # --- Scoring (max 100) ------------------------------------------------------
@@ -140,6 +144,8 @@ DIFFICULTIES = {
             "QUICK_DRAW_CHANCE": 0.50,
             "ROAM_CHANCE": 0.12,
             "FLANK_HOSTILE_CHANCE": 0.50,
+            "DUMP_CHANCE": 0.08,
+            "DEPARTURE_MULT": 1.3,
             "LOADOUTS": {
                 "standard": {"flashbang": 3, "stinger": 2, "gas": 1, "c2": 2, "wedge": 3},
                 "breacher": {"flashbang": 2, "stinger": 1, "gas": 1, "c2": 4, "wedge": 2},
@@ -171,6 +177,8 @@ DIFFICULTIES = {
             "SURRENDER_LAPSE_CHANCE": 0.30,
             "ROAM_CHANCE": 0.22,
             "FLANK_HOSTILE_CHANCE": 0.85,
+            "DUMP_CHANCE": 0.25,
+            "DEPARTURE_MULT": 0.8,
             "SUSPECT_ACCURACY_MULT": 1.15,
             "SUSPECT_RESISTANCE_BONUS": 0.10,
             "LOADOUTS": {

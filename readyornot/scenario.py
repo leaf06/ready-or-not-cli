@@ -49,6 +49,7 @@ def load_scenario(scenario_id: str) -> Scenario:
         doors=doors,
         npcs=npcs,
         evidence=evidence,
+        departure=data.get("departure"),
         art=load_room_art(SCENARIO_DIR / f"{scenario_id}.art"),
         art_compact=load_room_art(SCENARIO_DIR / f"{scenario_id}.compact.art"),
     )
