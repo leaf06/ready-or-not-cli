@@ -1,4 +1,4 @@
-# Detailed first-person room art for nakatomi.json (80-column terminals).
+# Detailed first-person room art for this scenario (80-column terminals).
 # Each block starts with "== room_id ==". Lines stay within 78 columns.
 # The last 6 rows are the floor where people are drawn.
 # [n] labels match the exit numbers in 'look'.

@@ -36,6 +36,15 @@ class ScenarioTests(unittest.TestCase):
             scn = load_scenario(s["id"])
             self.assertTrue(any(r.entry for r in scn.rooms))
 
+    def test_every_scenario_folder_is_complete(self):
+        from readyornot.scenario import SCENARIO_DIR
+        folders = [p for p in SCENARIO_DIR.iterdir() if p.is_dir()]
+        self.assertEqual(len(folders), len(list_scenarios()))
+        for folder in folders:
+            for name in ("scenario.json", "detailed.art", "compact.art"):
+                self.assertTrue((folder / name).exists(), f"{folder.name}/{name} is missing")
+            self.assertEqual(load_scenario(folder.name).id, folder.name)
+
     def test_every_room_reachable(self):
         g = new_game()
         for r in g.rooms:

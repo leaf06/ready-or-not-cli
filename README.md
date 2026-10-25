@@ -158,18 +158,32 @@ and then going straight for Theo completes about 83% of Medium runs.
 
 ## Adding scenarios
 
-Drop a new JSON file in `readyornot/scenarios/` and it appears in the menu.
-Use [`larkspur_lane.json`](readyornot/scenarios/larkspur_lane.json) as the
+Each scenario is a folder in [`scenarios/`](scenarios/) at the project root,
+named after its id:
+
+```
+scenarios/
+  larkspur_lane/
+    scenario.json   rooms, doors, people, evidence, briefing
+    detailed.art    80-column scenes
+    compact.art     phone-sized scenes
+  nuke_lab/
+  biscayne_lady/
+  nakatomi/
+```
+
+Add a folder and it appears in the menu. The `id` inside `scenario.json` must
+match the folder name. Copy [`larkspur_lane/`](scenarios/larkspur_lane/) as a
 template:
 
 - **rooms**: an `entry: true` room is a starting point, and `outdoor` rooms are off-limits to suspects
 - **doors**: `kind` is `door` or `opening`, plus optional `locked` and `trap` (`flash` / `explosive`)
 - **doors**: also optional `escape: true` for a door runners can flee through
-- **departure** (optional): `{"ticks": 45, "pilot": "<npc id>", "alert_rate": 3, ...}` gives the scenario a clock that runs while the pilot is free at their starting room; see `biscayne_lady.json` (a yacht leaving) and `nakatomi.json` (a vault opening)
+- **departure** (optional): `{"ticks": 45, "pilot": "<npc id>", "alert_rate": 3, ...}` gives the scenario a clock that runs while the pilot is free at their starting room; see `biscayne_lady/` (a yacht leaving) and `nakatomi/` (a vault opening)
 - **banners** / **headlines** (optional): per-outcome debrief art and titles, keyed by `complete`, `incomplete`, `departed` or `kia`
 - **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon` (`pistol`, `shotgun`, `rifle`, `smg`, `knife`), `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware`, `alert`, or `surrendered` with `bound: true` for someone tied up). `escapes: true` makes them run for an escape door, `dumps: true` makes them destroy evidence, and `minor: true` makes deadly force against them unauthorized.
 - **evidence**: objective items to collect
-- **art** (optional): `<scenario_id>.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `<scenario_id>.compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
+- **art**: `detailed.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
 
 ## Development
 
