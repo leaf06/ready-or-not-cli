@@ -1,7 +1,7 @@
 """Balance simulator: plays a scenario many times with scripted bots.
 
-    python3 tools/simulate.py                 # 500 runs per bot
-    python3 tools/simulate.py -n 2000 --scenario larkspur_lane
+    python3 tools/simulate.py                 # 500 runs per bot, every difficulty
+    python3 tools/simulate.py -n 2000 --difficulty hard
 
 Change readyornot/tuning.py, rerun, and compare. The "tactical" bot mirrors,
 disarms and flashes every room. The "reckless" bot kicks doors and walks in.
@@ -20,6 +20,7 @@ from readyornot.engine import Game  # noqa: E402
 from readyornot.model import HOSTILE, INCAPACITATED, SURRENDERED  # noqa: E402
 from readyornot.scenario import load_scenario  # noqa: E402
 from readyornot.scoring import score  # noqa: E402
+from readyornot.tuning import DIFFICULTIES  # noqa: E402
 
 
 def next_step(game: Game, target_ok):
@@ -94,10 +95,10 @@ def act(game: Game, tactical: bool) -> str:
     return f"move {step}"
 
 
-def run(scenario_id: str, tactical: bool, seed: int) -> dict:
+def run(scenario_id: str, tactical: bool, seed: int, difficulty: str) -> dict:
     scn = load_scenario(scenario_id)
     entry = next(r.id for r in scn.rooms if r.entry)
-    game = Game(scn, "standard", entry, seed=seed)
+    game = Game(scn, "standard", entry, seed=seed, difficulty=difficulty)
     for _ in range(400):
         if game.over:
             break
@@ -112,13 +113,21 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("-n", type=int, default=500)
     ap.add_argument("--scenario", default="larkspur_lane")
+    ap.add_argument("--difficulty", choices=list(DIFFICULTIES), action="append",
+                    help="repeatable; default runs all of them")
     args = ap.parse_args()
+    for difficulty in args.difficulty or list(DIFFICULTIES):
+        print(f"\n=== {DIFFICULTIES[difficulty]['label']} ===")
+        report(args, difficulty)
+
+
+def report(args, difficulty: str) -> None:
     for name, tactical in (("tactical", True), ("reckless", False)):
-        results = [run(args.scenario, tactical, s) for s in range(args.n)]
+        results = [run(args.scenario, tactical, s, difficulty) for s in range(args.n)]
         outcomes = Counter(r["outcome"] for r in results)
         grades = Counter(r["grade"] for r in results)
         avg = lambda k: sum(r[k] for r in results) / len(results)  # noqa: E731
-        print(f"\n{name} bot, {args.n} runs")
+        print(f"{name} bot, {args.n} runs")
         print("  outcome: " + ", ".join(f"{k} {v / args.n:.0%}" for k, v in outcomes.most_common()))
         print("  grades:  " + ", ".join(f"{g} {grades[g]}" for g in "SABCDF"))
         print(f"  avg score {avg('total'):.1f} · avg arrests {avg('suspects_arrested'):.1f}"

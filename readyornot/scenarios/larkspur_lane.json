@@ -61,7 +61,7 @@
     {"id": "teen", "kind": "civilian", "desc": "teenage boy", "room": "bath",
      "resistance": 0.20, "state": "alert"},
     {"id": "homeowner", "kind": "civilian", "desc": "elderly man tied to a chair", "room": "spare",
-     "resistance": 0.05, "state": "alert"},
+     "bound": true, "state": "surrendered"},
     {"id": "chemist", "kind": "suspect", "desc": "man in a respirator", "room": "basement",
      "weapon": "pistol", "concealed": true, "resistance": 0.45, "aggression": 0.30},
     {"id": "bagger", "kind": "suspect", "desc": "skinny man in latex gloves", "room": "basement",

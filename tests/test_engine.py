@@ -193,13 +193,110 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(score(g)["total"], 0)
 
 
+class V02Tests(unittest.TestCase):
+    def test_explosive_trap_grammar(self):
+        g = new_game(roll=0.99)
+        g.team_room = "hallway"
+        g.execute("mirror basement")
+        text = " ".join(t for _, t in g.drain())
+        self.assertIn("an explosive", text)
+        self.assertNotIn("a explosive", text)
+
+    def test_bound_civilian_starts_compliant_and_never_lapses(self):
+        g = new_game(roll=0.0)  # every chance roll would succeed
+        homeowner = npc(g, "homeowner")
+        self.assertTrue(homeowner.bound)
+        self.assertEqual(homeowner.state, SURRENDERED)
+        g.execute("wait")  # team is elsewhere; would normally lapse at roll 0.0
+        self.assertEqual(homeowner.state, SURRENDERED)
+        g.team_room = "spare"
+        self.assertIn("tied up", g.npc_line(homeowner))
+        g.execute("restrain " + homeowner.tag)
+        self.assertEqual(homeowner.state, RESTRAINED)
+
+    def test_focused_yell_only_targets_one_person(self):
+        g = new_game(roll=0.0)
+        g.team_room = "living"
+        npc(g, "dice").aggression = 0
+        g.execute("yell b")
+        self.assertEqual(npc(g, "tasha").state, SURRENDERED)
+        self.assertNotEqual(npc(g, "dice").state, SURRENDERED)  # wasn't yelled at
+
+    def test_report_all_points_to_unreported_elsewhere(self):
+        g = new_game()
+        tasha = npc(g, "tasha")
+        tasha.state = RESTRAINED
+        g.execute("report all")
+        text = " ".join(t for _, t in g.drain())
+        self.assertIn("Living Room", text)
+
+    def test_disarm_can_fail(self):
+        g = new_game(roll=0.0)  # below DISARM_FAIL_CHANCE
+        g.team_room = "hallway"
+        g.doors["master_door"].trap_known = True
+        g.execute("disarm master")
+        self.assertIsNone(g.doors["master_door"].trap)
+        self.assertGreater(g.disoriented, 0)
+
+    def test_aggressive_suspect_can_resist_stun(self):
+        g = new_game(roll=0.0)  # below aggression * STUN_RESIST_CHANCE
+        coyle = npc(g, "coyle")
+        g.apply_grenade("flashbang", "master")
+        self.assertEqual(coyle.stunned, 0)
+        g = new_game(roll=0.99)
+        g.apply_grenade("flashbang", "master")
+        self.assertGreater(npc(g, "coyle").stunned, 0)
+
+
+class DifficultyTests(unittest.TestCase):
+    def test_presets_do_not_leak_into_each_other(self):
+        hard = Game(load_scenario("larkspur_lane"), "standard", "front_yard", difficulty="hard")
+        easy = Game(load_scenario("larkspur_lane"), "standard", "front_yard", difficulty="easy")
+        self.assertEqual(easy.T.MIRROR_SPOTTED_CHANCE, 0.0)
+        self.assertGreater(hard.T.MIRROR_SPOTTED_CHANCE, 0.0)
+        self.assertEqual(T.MIRROR_SPOTTED_CHANCE, T.settings("medium").MIRROR_SPOTTED_CHANCE)
+        hard.T.LOADOUTS["standard"]["items"]["flashbang"] = 99
+        self.assertNotEqual(T.LOADOUTS["standard"]["items"]["flashbang"], 99)
+
+    def test_easy_matches_original_v010_kit(self):
+        easy = Game(load_scenario("larkspur_lane"), "less_lethal", "front_yard", difficulty="easy")
+        self.assertEqual(easy.inv["flashbang"], 4)
+        self.assertEqual(easy.inv["c2"], 1)
+
+    def test_easy_mirror_never_draws_fire(self):
+        g = Game(load_scenario("larkspur_lane"), "standard", "hallway",
+                 rng=Rigged(0.0), difficulty="easy")
+        g.execute("mirror master")
+        self.assertTrue(all(o.hp == o.max_hp for o in g.officers))
+
+    def test_hard_suspects_resist_more(self):
+        med = new_game()
+        hard = Game(load_scenario("larkspur_lane"), "standard", "front_yard", difficulty="hard")
+        self.assertLess(hard.comply_chance(npc(hard, "coyle")), med.comply_chance(npc(med, "coyle")))
+        # civilians are unaffected
+        self.assertEqual(hard.comply_chance(npc(hard, "tasha")), med.comply_chance(npc(med, "tasha")))
+
+    def test_every_difficulty_plays_without_crashing(self):
+        for difficulty in T.DIFFICULTIES:
+            for seed in range(30):
+                rng = random.Random(seed)
+                g = Game(load_scenario("larkspur_lane"), rng.choice(list(T.LOADOUTS)),
+                         "front_yard", seed=seed, difficulty=difficulty)
+                for _ in range(80):
+                    if g.over:
+                        break
+                    g.execute(rng.choice(FuzzTests.COMMANDS))
+                g.end_mission()
+                score(g)
+
+
 class FuzzTests(unittest.TestCase):
     COMMANDS = ["look", "map", "status", "o", "help", "yell", "wait", "collect", "report",
                 "report all", "move 1", "move 2", "move 3", "mirror 1", "mirror 2", "open 1",
                 "open 2", "kick 1", "kick 2", "pick 1", "c2 1", "wedge 2", "close 1",
                 "disarm 1", "throw flash 1", "throw gas 2", "breach 1 flash", "breach 2 c2 stinger",
                 "breach 3 pick", "shoot a", "shoot c", "taser b", "restrain a", "restrain b",
-                "restrain d", "cuff e", "nonsense", "", "move kitchen", "breach hall"]
+                "restrain d", "cuff e", "yell a", "yell g", "report b", "nonsense", "", "move kitchen", "breach hall"]
 
     def test_random_commands_never_crash(self):
         for seed in range(150):
