@@ -150,6 +150,7 @@ def debrief(game: Game) -> None:
     out()
     rule("title")
     headline = {"complete": "MISSION COMPLETE", "incomplete": "MISSION ENDED: objectives incomplete",
+                "departed": "MISSION FAILED: the suspects got away",
                 "kia": "MISSION FAILED: element lead KIA"}[game.outcome]
     if Settings.art:
         print(paint("\n".join(art.BANNERS[game.outcome]),

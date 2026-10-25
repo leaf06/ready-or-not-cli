@@ -84,6 +84,11 @@ class Game:
         self.just_entered = False
         self.team_room = entry
         self.rooms[entry].visited = True
+        dep = scenario.departure
+        self.departure = round(dep["ticks"] * self.T.DEPARTURE_MULT) if dep else None
+        self.pilot_stopped = False
+        # the pilot can only leave from wherever they start (the helm)
+        self.helm = next(n.room for n in self.npcs if n.id == dep["pilot"]) if dep else None
         self._dist_cache: Dict[str, Dict[str, int]] = {}
 
         self.commands = {}
@@ -307,12 +312,26 @@ class Game:
                 n.state = ALERT
                 self.rearm(n)
             if n.kind == "suspect" and n.state == ALERT and not n.stunned:
+                if n.dumps and self.dumpable(n.room):
+                    continue  # stays put to get rid of the evidence
+                if self.helm and n.id == self.scenario.departure["pilot"]:
+                    continue  # the pilot stays at the helm
                 if n.escapes:
                     self.run_for_exit(n)
                 elif self.rng.random() < self.T.ROAM_CHANCE:
                     self.npc_move(n, allow_team_room=True)
 
-        # 4. Timers.
+        # 4. Dumpers destroy evidence; the departure clock runs.
+        for n in self.npcs:
+            if (n.dumps and n.state in (ALERT, HOSTILE) and not n.stunned
+                    and self.dist(n.room, self.team_room) <= self.T.DUMP_RANGE):
+                self.dump_evidence(n)
+        self.run_departure()
+        if self.over:
+            self.in_tick = False
+            return
+
+        # 5. Timers.
         for n in self.npcs:
             if n.stunned:
                 n.stunned -= 1
@@ -456,6 +475,51 @@ class Game:
             if n.weapon and self.rng.random() < n.aggression * self.T.FLANK_HOSTILE_CHANCE:
                 self.go_hostile(n)
         return True
+
+    def dumpable(self, room_id: str) -> List[Item]:
+        return [i for i in self.items.values()
+                if i.objective and i.room == room_id and not i.collected and not i.destroyed]
+
+    def dump_evidence(self, n: NPC) -> None:
+        for item in self.dumpable(n.room):
+            if self.rng.random() < self.T.DUMP_CHANCE:
+                item.destroyed = True
+                where = "right in front of you" if n.room == self.team_room else "somewhere aboard"
+                self.say(f"{self.label(n)} dumps the {item.name} over the side, {where}!", "danger")
+                return
+
+    def run_departure(self) -> None:
+        if self.departure is None:
+            return
+        dep = self.scenario.departure
+        pilot = next(n for n in self.npcs if n.id == dep["pilot"])
+        if not pilot.active or pilot.stunned or pilot.room != self.helm:
+            if not pilot.active and not self.pilot_stopped:
+                self.pilot_stopped = True
+                self.say(f'TOC: "Good work, the {dep.get("pilot_title", "pilot")} is out of action. '
+                         f'Nobody\'s leaving."', "radio")
+            return
+        self.pilot_stopped = False
+        before = self.departure
+        self.departure -= 1 if pilot.state == UNAWARE else dep.get("alert_rate", 2)
+        for w in self.T.DEPARTURE_WARNINGS:
+            if before > w >= self.departure > 0:
+                self.say(f'TOC: "Element, {dep.get("warning", "they are preparing to leave")}. '
+                         f'About {self.departure} moves left."', "radio")
+        if self.departure <= 0:
+            self.depart()
+
+    def depart(self) -> None:
+        dep = self.scenario.departure
+        self.say(dep.get("departed", "They got away."), "danger")
+        for n in self.npcs:
+            if n.kind == "suspect" and n.alive and n.state not in (RESTRAINED, INCAPACITATED):
+                n.state, n.room = ESCAPED, ""
+        for item in self.items.values():
+            if not item.collected:
+                item.destroyed = True
+        self.over = True
+        self.outcome = "departed"
 
     def npc_can_use(self, d: Door, dest: str) -> bool:
         return not (self.rooms[dest].outdoor or d.wedged or (d.trap and d.state == "closed"))
@@ -684,7 +748,8 @@ class Game:
             for n in people:
                 style = "danger" if n.state == HOSTILE else "info"
                 self.say("  " + self.npc_line(n), style)
-        items = [i for i in self.items.values() if i.room == room.id and not i.collected]
+        items = [i for i in self.items.values()
+                 if i.room == room.id and not i.collected and not i.destroyed]
         if items:
             self.say("Evidence: " + ", ".join(i.name for i in items), "good")
         return False
@@ -719,6 +784,11 @@ class Game:
                  + ", taser, zip-ties", "info")
         if self.disoriented:
             self.say("  The team is DISORIENTED.", "danger")
+        if self.departure is not None:
+            if self.pilot_stopped:
+                self.say("  Departure: stopped.", "good")
+            else:
+                self.say(f"  Departure in about {self.departure} moves.", "warn")
         return False
 
     def objective_progress(self) -> List[Tuple[str, int, int]]:
@@ -739,6 +809,9 @@ class Game:
         for text, done, total in self.objective_progress():
             mark = "[x]" if done == total else "[ ]"
             self.say(f"  {mark} {text}: {done}/{total}", "good" if done == total else "info")
+        lost = [i.name for i in self.items.values() if i.destroyed]
+        if lost:
+            self.say("  Evidence destroyed: " + ", ".join(lost) + ".", "danger")
         escaped = [n for n in self.npcs if n.state == ESCAPED]
         if escaped:
             self.say(f"  {len(escaped)} suspect(s) escaped the building.", "danger")
@@ -1074,7 +1147,8 @@ class Game:
         return False
 
     def cmd_collect(self, args) -> bool:
-        items = [i for i in self.items.values() if i.room == self.team_room and not i.collected]
+        items = [i for i in self.items.values()
+                 if i.room == self.team_room and not i.collected and not i.destroyed]
         if not items:
             self.say("No evidence here.", "dim")
             return False

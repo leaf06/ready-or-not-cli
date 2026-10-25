@@ -60,6 +60,7 @@ class NPC:
     bound: bool = False         # tied up: starts compliant, never resists or runs
     minor: bool = False         # juvenile: deadly force is never authorized
     escapes: bool = False       # once alerted, heads for an escape door
+    dumps: bool = False         # once alerted, destroys objective evidence in their room
     resistance: float = 0.4
     aggression: float = 0.0
     state: str = UNAWARE
@@ -97,6 +98,7 @@ class Item:
     room: str
     objective: bool = False
     collected: bool = False
+    destroyed: bool = False     # dumped by a suspect; can never be collected
 
 
 @dataclass
@@ -130,5 +132,7 @@ class Scenario:
     doors: List[Door]
     npcs: List[NPC]
     evidence: List[Item]
+    # Optional departure clock: {"ticks": N, "pilot": npc id, "alert_rate": n, "verb": "..."}
+    departure: Optional[dict] = None
     art: Dict[str, List[str]] = field(default_factory=dict)          # detailed, 80 columns
     art_compact: Dict[str, List[str]] = field(default_factory=dict)  # narrow screens
