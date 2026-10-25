@@ -56,6 +56,7 @@ class NPC:
     room: str
     weapon: Optional[str] = None
     concealed: bool = False     # weapon hidden until they draw it or are searched
+    bound: bool = False         # tied up: starts compliant, never resists or runs
     resistance: float = 0.4
     aggression: float = 0.0
     state: str = UNAWARE

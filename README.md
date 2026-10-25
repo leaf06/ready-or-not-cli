@@ -1,4 +1,4 @@
-# Ready or Not: Terminal Tactical (v0.1)
+# Ready or Not: Terminal Tactical (v0.1.1)
 
 A turn-based, text-command SWAT game for the macOS Terminal, inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
@@ -37,8 +37,8 @@ commands (`look`, `map`, `status`, `objectives`, `help`, `report`) take no time.
 | `breach <exit> [open\|pick\|kick\|c2] [flash\|stinger\|gas]` | Breach, throw and enter in one go |
 | `move <exit>` | Go through an open door |
 | `wedge` / `disarm <exit>` | Seal a door against suspects / cut a trap you've spotted |
-| `yell` | Order everyone in the room to comply |
-| `restrain <x>` · `report [x\|all]` · `collect` | Cuff, report to TOC, bag evidence |
+| `yell [x]` | Order everyone in the room to comply, or single one person out (slightly more effective) |
+| `restrain <x>` · `report [x\|all]` · `collect` | Cuff, report to TOC (you must be in the same room), bag evidence |
 | `shoot <x>` · `taser <x>` | Deadly force / less-lethal |
 | `end` | Finish the mission and get your debrief |
 
@@ -55,8 +55,12 @@ already complied.
 - **Stuns.** Stunned people can't shoot and are much more likely to comply. Flashbangs last 3 turns, stingers 2 (and can injure), gas 4.
 - **Warning beat.** A suspect who raises a weapon usually gives you one action to respond. Aggressive ones may draw and fire at once, especially when you yell at them unstunned.
 - **Fake surrenders.** A suspect with a hidden weapon keeps it when they put their hands up. Cuff them fast. Anyone you leave uncuffed in another room may stop complying and grab their weapon again.
-- **Traps.** Some doors are rigged with flashbangs or explosives. Mirror the door, then `disarm` it, or C2 it.
-- **Crits.** About one hit in five finds a gap in the armor. Walking into an unscouted room can kill you.
+- **Traps.** Some doors are rigged with flashbangs or explosives. Mirror the door, then `disarm` it (it fails 1 time in 10), or C2 it.
+- **Mirroring isn't free.** An alert, armed suspect may spot the mirror and fire blind through the door.
+- **Covering up.** Aggressive suspects sometimes see a grenade coming and aren't stunned. Check for `stunned` before you trust it.
+- **Point man.** On the turn you come through a door, you're the one most likely to be shot at.
+- **Crits.** About one hit in four finds a gap in the armor. Walking into an unscouted room can kill you.
+- **Scarce kit.** Loadouts carry fewer grenades than there are rooms, so decide where they count.
 
 ### Scoring (100 points)
 Objectives 35 · Arrests (not kills) 20 · Reports 10 · Evidence 10 · Team
@@ -79,8 +83,8 @@ Baseline on the current numbers:
 
 | Bot | Completes | KIA | Avg score | Mostly |
 |---|---|---|---|---|
-| tactical (mirror, disarm, flash every room) | 99% | 1% | 94.6 | S |
-| reckless (kick and walk in) | 90% | 10% | 74.7 | B / C |
+| tactical (mirror, disarm, flash every room) | 93% | 7% | 85.3 | S / A / B |
+| reckless (kick and walk in) | 79% | 21% | 65.8 | B / C / F |
 
 ## Adding scenarios
 

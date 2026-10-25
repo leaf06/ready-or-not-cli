@@ -193,13 +193,68 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(score(g)["total"], 0)
 
 
+class V02Tests(unittest.TestCase):
+    def test_explosive_trap_grammar(self):
+        g = new_game(roll=0.99)
+        g.team_room = "hallway"
+        g.execute("mirror basement")
+        text = " ".join(t for _, t in g.drain())
+        self.assertIn("an explosive", text)
+        self.assertNotIn("a explosive", text)
+
+    def test_bound_civilian_starts_compliant_and_never_lapses(self):
+        g = new_game(roll=0.0)  # every chance roll would succeed
+        homeowner = npc(g, "homeowner")
+        self.assertTrue(homeowner.bound)
+        self.assertEqual(homeowner.state, SURRENDERED)
+        g.execute("wait")  # team is elsewhere; would normally lapse at roll 0.0
+        self.assertEqual(homeowner.state, SURRENDERED)
+        g.team_room = "spare"
+        self.assertIn("tied up", g.npc_line(homeowner))
+        g.execute("restrain " + homeowner.tag)
+        self.assertEqual(homeowner.state, RESTRAINED)
+
+    def test_focused_yell_only_targets_one_person(self):
+        g = new_game(roll=0.0)
+        g.team_room = "living"
+        npc(g, "dice").aggression = 0
+        g.execute("yell b")
+        self.assertEqual(npc(g, "tasha").state, SURRENDERED)
+        self.assertNotEqual(npc(g, "dice").state, SURRENDERED)  # wasn't yelled at
+
+    def test_report_all_points_to_unreported_elsewhere(self):
+        g = new_game()
+        tasha = npc(g, "tasha")
+        tasha.state = RESTRAINED
+        g.execute("report all")
+        text = " ".join(t for _, t in g.drain())
+        self.assertIn("Living Room", text)
+
+    def test_disarm_can_fail(self):
+        g = new_game(roll=0.0)  # below DISARM_FAIL_CHANCE
+        g.team_room = "hallway"
+        g.doors["master_door"].trap_known = True
+        g.execute("disarm master")
+        self.assertIsNone(g.doors["master_door"].trap)
+        self.assertGreater(g.disoriented, 0)
+
+    def test_aggressive_suspect_can_resist_stun(self):
+        g = new_game(roll=0.0)  # below aggression * STUN_RESIST_CHANCE
+        coyle = npc(g, "coyle")
+        g.apply_grenade("flashbang", "master")
+        self.assertEqual(coyle.stunned, 0)
+        g = new_game(roll=0.99)
+        g.apply_grenade("flashbang", "master")
+        self.assertGreater(npc(g, "coyle").stunned, 0)
+
+
 class FuzzTests(unittest.TestCase):
     COMMANDS = ["look", "map", "status", "o", "help", "yell", "wait", "collect", "report",
                 "report all", "move 1", "move 2", "move 3", "mirror 1", "mirror 2", "open 1",
                 "open 2", "kick 1", "kick 2", "pick 1", "c2 1", "wedge 2", "close 1",
                 "disarm 1", "throw flash 1", "throw gas 2", "breach 1 flash", "breach 2 c2 stinger",
                 "breach 3 pick", "shoot a", "shoot c", "taser b", "restrain a", "restrain b",
-                "restrain d", "cuff e", "nonsense", "", "move kitchen", "breach hall"]
+                "restrain d", "cuff e", "yell a", "yell g", "report b", "nonsense", "", "move kitchen", "breach hall"]
 
     def test_random_commands_never_crash(self):
         for seed in range(150):

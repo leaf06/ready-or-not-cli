@@ -43,11 +43,11 @@ DOORS (an <exit> is its number from 'look', or part of its name)
   breach <exit> [open|pick|kick|c2] [flash|stinger|gas]
                               breach, throw, and enter in one go
 PEOPLE (a <target> is their letter, like 'a')
-  yell  (comply, y)           order everyone here to comply
+  yell [target]  (comply, y)  order everyone here to comply, or single one out
   restrain <target>  (cuff)   zip-tie someone who surrendered or is down
   shoot <target>              deadly force
   taser <target>  (tase)      less-lethal: subdues a non-compliant person
-  report [target|all]  (r)    report secured or downed people to TOC (free)
+  report [target|all]  (r)    report secured or dead people in this room to TOC (free)
   collect  (secure)           bag all evidence and weapons in the room
 OTHER
   wait (z) · status (s) · objectives (o) · help (?) · end (finish the mission)
@@ -168,6 +168,8 @@ class Game:
             state = {UNAWARE: "unaware", ALERT: "alert", HOSTILE: "WEAPON RAISED",
                      SURRENDERED: "hands up", RESTRAINED: "restrained",
                      INCAPACITATED: "down, incapacitated"}[n.state]
+            if n.bound and n.state == SURRENDERED:
+                state = "tied up"
             bits.append(state)
             if n.stunned and n.active:
                 bits.append("stunned")
@@ -293,7 +295,8 @@ class Game:
                 continue
             if n.state == HOSTILE:
                 n.state = ALERT
-            if n.state == SURRENDERED and self.rng.random() < T.SURRENDER_LAPSE_CHANCE:
+            if (n.state == SURRENDERED and not n.bound
+                    and self.rng.random() < T.SURRENDER_LAPSE_CHANCE):
                 n.state = ALERT
                 self.rearm(n)
             if (n.kind == "suspect" and n.state == ALERT and not n.stunned
@@ -318,7 +321,8 @@ class Game:
     # ------------------------------------------------------------------ combat
     def pick_target(self) -> Officer:
         mates = [o for o in self.officers[1:] if not o.down]
-        if not mates or self.rng.random() < T.PLAYER_TARGET_CHANCE:
+        chance = T.POINT_MAN_TARGET_CHANCE if self.just_entered else T.PLAYER_TARGET_CHANCE
+        if not mates or self.rng.random() < chance:
             return self.player
         return self.rng.choice(mates)
 
@@ -550,8 +554,7 @@ class Game:
         d.state, d.locked = "broken", False
         for n in self.room_npcs(dest):
             if n.alive:
-                n.stunned = max(n.stunned, T.C2_STUN)
-                n.stun_bonus = max(n.stun_bonus, T.GRENADES["flashbang"]["comply_bonus"])
+                self.stun(n, T.C2_STUN, T.GRENADES["flashbang"]["comply_bonus"])
                 if n.state not in (RESTRAINED, INCAPACITATED) and self.rng.random() < T.C2_INJURE_CHANCE:
                     n.injured = True
                     if n.kind == "civilian":
@@ -559,6 +562,14 @@ class Game:
         self.noise(self.team_room, None)
         self.reveal_room(dest, "Through the smoke")
         return True, True
+
+    def stun(self, n: NPC, ticks: int, bonus: float) -> None:
+        # Aggressive suspects sometimes see it coming and cover up.
+        if (n.kind == "suspect" and n.active
+                and self.rng.random() < n.aggression * T.STUN_RESIST_CHANCE):
+            return
+        n.stunned = max(n.stunned, ticks)
+        n.stun_bonus = max(n.stun_bonus, bonus)
 
     def apply_grenade(self, kind: str, room_id: str) -> None:
         g = T.GRENADES[kind]
@@ -569,8 +580,7 @@ class Game:
         for n in self.room_npcs(room_id):
             if not n.alive:
                 continue
-            n.stunned = max(n.stunned, g["stun"])
-            n.stun_bonus = g["comply_bonus"]
+            self.stun(n, g["stun"], g["comply_bonus"])
             if n.state not in (RESTRAINED, INCAPACITATED) and self.rng.random() < g["injure"]:
                 n.injured = True
                 if n.kind == "civilian":
@@ -691,11 +701,23 @@ class Game:
         self.say(f"You slide the mirror gun under the {d.name}.", "info")
         if d.trap:
             d.trap_known = True
-            self.say(f"  There's a {'flashbang' if d.trap == 'flash' else 'explosive'} "
+            self.say(f"  There's {'a flashbang' if d.trap == 'flash' else 'an explosive'} "
                      "rigged to the door! 'disarm' it or use C2.", "danger")
         else:
             self.say("  No traps on the door.", "good")
         self.reveal_room(dest, "  Under the door")
+        for n in self.room_npcs(dest):
+            if (n.state == ALERT and n.kind == "suspect" and n.weapon_visible and not n.stunned
+                    and self.rng.random() < n.aggression * T.MIRROR_SPOTTED_CHANCE):
+                self.say(f"{self.label(n)} spots the mirror and fires through the door!", "danger")
+                target = self.pick_target()
+                w = T.WEAPONS[n.weapon]
+                if self.rng.random() < w["accuracy"] * T.THROUGH_DOOR_ACCURACY:
+                    self.damage_officer(target, self.rng.randint(*w["damage"]))
+                else:
+                    self.say("  Splinters fly. Nobody's hit.", "warn")
+                self.noise(dest, None)
+                break
         return True
 
     def cmd_open(self, args) -> bool:
@@ -747,6 +769,10 @@ class Game:
         if not (d.trap and d.trap_known):
             self.say("You haven't spotted a trap on that door. Mirror it first.", "warn")
             return False
+        if self.rng.random() < T.DISARM_FAIL_CHANCE:
+            self.say("You cut the wrong wire...", "danger")
+            self.trigger_trap(d)
+            return True
         d.trap = None
         self.say(f"You cut the wire. The trap on the {d.name} is disarmed.", "good")
         return True
@@ -838,14 +864,22 @@ class Game:
             self.drop_weapon(n)
 
     def cmd_yell(self, args) -> bool:
+        focus = None
+        if args:
+            focus = self.resolve_npc(args)
+            if not focus:
+                return False
+            if not focus.active:
+                self.say(f"{self.label(focus)} is already under control.", "dim")
+                return False
         self.say('"POLICE! SEARCH WARRANT! GET ON THE GROUND! SHOW ME YOUR HANDS!"', "alert")
-        targets = [n for n in self.room_npcs(self.team_room) if n.active]
+        targets = [focus] if focus else [n for n in self.room_npcs(self.team_room) if n.active]
         if not targets:
             anyone = any(n.alive for n in self.room_npcs(self.team_room))
             self.say("Everyone here is complying." if anyone else "No one here.", "dim")
             return True
         for n in targets:
-            p = self.comply_chance(n)
+            p = self.comply_chance(n) + (T.FOCUSED_YELL_BONUS if focus else 0)
             n.yells += 1
             if self.rng.random() < p:
                 self.surrender(n)
@@ -932,7 +966,8 @@ class Game:
             return False
         n.state = RESTRAINED
         n.identified = True
-        self.say(f"{self.label(n)} restrained and searched.", "good")
+        how = "cut loose, zip-tied and searched" if n.bound else "restrained and searched"
+        self.say(f"{self.label(n)} {how}.", "good")
         if n.weapon:
             self.drop_weapon(n, found=True)
         return True
@@ -948,7 +983,6 @@ class Game:
             targets = [n for n in here if n.resolved and not n.reported]
             if not targets:
                 self.say("Nothing new to report here.", "dim")
-                return False
         for n in targets:
             if n.reported:
                 self.say(f"{self.label(n)} was already reported.", "dim")
@@ -958,6 +992,11 @@ class Game:
                 what = "neutralized" if n.state == DEAD else "restrained"
                 n.reported = True
                 self.say(f'"TOC, {n.kind} {what}." TOC: "Copy, {n.kind} {what}."', "radio")
+        elsewhere = sorted({self.rooms[n.room].name for n in self.npcs
+                            if n.resolved and not n.reported})
+        if elsewhere:
+            self.say("Still unreported (you have to be with them): " + ", ".join(elsewhere) + ".",
+                     "warn")
         return False
 
     def cmd_collect(self, args) -> bool:
