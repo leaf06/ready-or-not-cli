@@ -50,7 +50,7 @@ def act(game: Game, tactical: bool) -> str:
     here = game.room_npcs(game.team_room)
     for n in here:
         if n.state == HOSTILE and n.weapon_visible:
-            return f"shoot {n.tag}"
+            return f"{'taser' if n.minor else 'shoot'} {n.tag}"
     if any(n.active for n in here):
         return "yell"
     for n in here:

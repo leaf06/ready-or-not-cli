@@ -162,7 +162,8 @@ def debrief(game: Game) -> None:
     for text, pts in result["penalties"]:
         out(f"  PENALTY: {text:<35} -{pts}", "danger")
     rule()
-    out(f"  Suspects arrested {result['suspects_arrested']}, killed {result['suspects_killed']} · "
+    escaped = f", escaped {result['suspects_escaped']}" if result["suspects_escaped"] else ""
+    out(f"  Suspects arrested {result['suspects_arrested']}, killed {result['suspects_killed']}{escaped} · "
         f"Civilians rescued {result['civilians_rescued']}, killed {result['civilians_dead']}", "info")
     out(f"  SCORE {result['total']} / 100   GRADE {result['grade']}", "alert")
     rule("title")

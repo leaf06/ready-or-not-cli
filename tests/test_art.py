@@ -41,8 +41,12 @@ class RoomArtTests(unittest.TestCase):
                     self.assertEqual(floor.strip(" ."), "", f"{room.id} floor clutter: {line!r}")
 
     def test_exit_labels_in_art_exist(self):
-        scn = load_scenario("larkspur_lane")
-        g = Game(scn, "standard", "front_yard")
+        for s in list_scenarios():
+            self._check_exit_labels(s["id"])
+
+    def _check_exit_labels(self, scenario_id):
+        scn = load_scenario(scenario_id)
+        g = Game(scn, "standard", next(r.id for r in scn.rooms if r.entry))
         for room in scn.rooms:
             g.team_room = room.id
             for name, art_set in (("detailed", scn.art), ("compact", scn.art_compact)):

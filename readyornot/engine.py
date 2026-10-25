@@ -15,7 +15,7 @@ from collections import deque
 from typing import Dict, List, Optional, Tuple
 
 from . import tuning
-from .model import (ALERT, DEAD, HOSTILE, INCAPACITATED, RESTRAINED, SURRENDERED,
+from .model import (ALERT, DEAD, ESCAPED, HOSTILE, INCAPACITATED, RESTRAINED, SURRENDERED,
                     UNAWARE, NPC, Door, Item, Officer, Scenario)
 
 GRENADE_ALIASES = {
@@ -163,6 +163,8 @@ class Game:
 
     def npc_line(self, n: NPC) -> str:
         bits = [self.label(n)]
+        if n.minor:
+            bits.append("JUVENILE")
         if n.state == DEAD:
             bits.append("DEAD")
         else:
@@ -296,7 +298,7 @@ class Game:
 
         # 3. People elsewhere.
         for n in self.npcs:
-            if n.room == self.team_room or not n.alive:
+            if n.room == self.team_room or not n.alive or n.state == ESCAPED:
                 continue
             if n.state == HOSTILE:
                 n.state = ALERT
@@ -304,9 +306,11 @@ class Game:
                     and self.rng.random() < self.T.SURRENDER_LAPSE_CHANCE):
                 n.state = ALERT
                 self.rearm(n)
-            if (n.kind == "suspect" and n.state == ALERT and not n.stunned
-                    and self.rng.random() < self.T.ROAM_CHANCE):
-                self.npc_move(n, allow_team_room=True)
+            if n.kind == "suspect" and n.state == ALERT and not n.stunned:
+                if n.escapes:
+                    self.run_for_exit(n)
+                elif self.rng.random() < self.T.ROAM_CHANCE:
+                    self.npc_move(n, allow_team_room=True)
 
         # 4. Timers.
         for n in self.npcs:
@@ -414,7 +418,7 @@ class Game:
         self.drop_weapon(n)
 
     def deadly_authorized(self, n: NPC) -> bool:
-        return n.kind == "suspect" and n.weapon_visible and n.active
+        return n.kind == "suspect" and n.weapon_visible and n.active and not n.minor
 
     # ------------------------------------------------------------------ noise & movement
     def noise(self, origin: str, radius: Optional[int]) -> None:
@@ -432,7 +436,7 @@ class Game:
         for did in self.rooms[n.room].doors:
             d = self.doors[did]
             dest = d.other(n.room)
-            if self.rooms[dest].outdoor or d.wedged or (d.trap and d.state == "closed"):
+            if not self.npc_can_use(d, dest):
                 continue
             if dest == self.team_room and not allow_team_room:
                 continue
@@ -452,6 +456,52 @@ class Game:
             if n.weapon and self.rng.random() < n.aggression * self.T.FLANK_HOSTILE_CHANCE:
                 self.go_hostile(n)
         return True
+
+    def npc_can_use(self, d: Door, dest: str) -> bool:
+        return not (self.rooms[dest].outdoor or d.wedged or (d.trap and d.state == "closed"))
+
+    def run_for_exit(self, n: NPC) -> None:
+        """A runner bolts out an escape door, or moves one room closer to one."""
+        for did in self.rooms[n.room].doors:
+            d = self.doors[did]
+            if d.escape and not d.wedged:
+                if d.other(n.room) == self.team_room:
+                    return  # the team is standing right outside
+                if self.rng.random() < self.T.ESCAPE_CHANCE:
+                    d.state, d.locked = "open", False
+                    n.state, n.room = ESCAPED, ""
+                    self.say(f'TOC: "Element, a suspect just fled out the {d.name}! '
+                             f'We lost them."', "danger")
+                return
+        if self.rng.random() >= self.T.ESCAPE_MOVE_CHANCE:
+            return
+        step = self.step_toward_exit(n.room)
+        if step:
+            d, dest = step
+            if d.kind == "door" and d.state == "closed":
+                d.state, d.locked = "open", False
+            n.room = dest
+            if dest == self.team_room:
+                self.say(f"Contact! {self.label(n)} runs in through the {d.name}!", "danger")
+                self.rooms[dest].cleared = False
+
+    def step_toward_exit(self, start: str) -> Optional[Tuple[Door, str]]:
+        """First move on the shortest path to an unwedged escape door, avoiding the team."""
+        q = deque([(start, None)])
+        seen = {start}
+        while q:
+            room, first = q.popleft()
+            if room != start and any(self.doors[did].escape and not self.doors[did].wedged
+                                     for did in self.rooms[room].doors):
+                return first
+            for did in self.rooms[room].doors:
+                d = self.doors[did]
+                nxt = d.other(room)
+                if nxt in seen or nxt == self.team_room or not self.npc_can_use(d, nxt):
+                    continue
+                seen.add(nxt)
+                q.append((nxt, first or (d, nxt)))
+        return None
 
     def trigger_trap(self, d: Door) -> None:
         trap, d.trap = d.trap, None
@@ -689,6 +739,9 @@ class Game:
         for text, done, total in self.objective_progress():
             mark = "[x]" if done == total else "[ ]"
             self.say(f"  {mark} {text}: {done}/{total}", "good" if done == total else "info")
+        escaped = [n for n in self.npcs if n.state == ESCAPED]
+        if escaped:
+            self.say(f"  {len(escaped)} suspect(s) escaped the building.", "danger")
         unreported = [n for n in self.npcs if n.resolved and not n.reported]
         if unreported:
             self.say(f"  {len(unreported)} secured or neutralized but not yet reported to TOC.", "warn")
@@ -943,6 +996,8 @@ class Game:
         self.neutralize(n, by="player")
         if not authorized:
             self.penalize(f"Unauthorized use of deadly force ({n.desc})", self.T.PENALTY_UNAUTHORIZED_DEADLY)
+        if n.minor:
+            self.penalize(f"Deadly force on a juvenile ({n.desc})", self.T.PENALTY_DEADLY_JUVENILE)
         if was_civ and n.state == DEAD:
             self.penalize(f"Civilian killed ({n.desc})", self.T.PENALTY_CIVILIAN_KILLED)
         return True

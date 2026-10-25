@@ -68,9 +68,9 @@ def figure(n: NPC):
     if n.state == SURRENDERED:
         return ("tied", "tied up") if n.bound else ("hands_up", "hands up")
     if n.state == HOSTILE:
-        return "hostile", "AIMING"
+        return "hostile", "KID AIMS" if n.minor else "AIMING"
     if n.weapon_visible:
-        return "armed", "ARMED"
+        return "armed", "KID+GUN" if n.minor else "ARMED"
     if n.concealed:
         return "standing", "hands?"
     return "standing", {UNAWARE: "unaware", ALERT: "alert"}.get(n.state, n.state)
