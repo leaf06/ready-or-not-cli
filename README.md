@@ -1,6 +1,6 @@
 # Ready or Not: Terminal Tactical (v0.4.0)
 
-A turn-based, text-command SWAT game for the macOS Terminal, inspired by
+A turn-based, text-command SWAT game for the terminal (macOS, Linux or Windows), inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
 You mirror doors, breach, throw flashbangs, order suspects and civilians to
 comply, follow the rules of engagement, and get graded on how cleanly you did it.
@@ -36,6 +36,24 @@ git clone <this repo> && cd ready-or-not-cli
 ./ron --scenario larkspur_lane --difficulty hard --no-color
 ./ron --no-art             # text only
 ```
+
+### Windows
+
+Install Python 3.9 or newer from [python.org](https://www.python.org/downloads/windows/)
+(or `winget install Python.Python.3.13`), then in Command Prompt or PowerShell:
+
+```bat
+git clone <this repo>
+cd ready-or-not-cli
+ron
+ron --seed 42 --scenario nakatomi
+```
+
+In PowerShell, type `.\ron` instead of `ron`. `py -m readyornot` works too.
+
+Colours work in Windows Terminal and in the classic console on Windows 10 or
+newer. If you see codes like `←[1m` instead of colours, play with `--no-color`.
+Arrow-key history works through the console's own line editing.
 
 ## ASCII art
 

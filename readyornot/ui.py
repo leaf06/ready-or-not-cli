@@ -18,7 +18,27 @@ STYLES = {
 }
 RESET = "\033[0m"
 
-_color = sys.stdout.isatty() and "NO_COLOR" not in os.environ
+
+
+def _enable_ansi() -> bool:
+    """Windows consoles only understand ANSI codes once virtual terminal mode is on."""
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.GetStdHandle.restype = wintypes.HANDLE
+        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        mode = wintypes.DWORD()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            return False
+        return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+    except (AttributeError, OSError):
+        return False
+
+
+_color = sys.stdout.isatty() and "NO_COLOR" not in os.environ and _enable_ansi()
 
 
 def set_color(enabled: bool) -> None:
