@@ -1,4 +1,4 @@
-# Ready or Not: Terminal Tactical (v0.1.2)
+# Ready or Not: Terminal Tactical (v0.1.3)
 
 A turn-based, text-command SWAT game for the macOS Terminal, inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
@@ -19,7 +19,27 @@ git clone <this repo> && cd ready-or-not-cli
 ./ron                      # or: python3 -m readyornot
 ./ron --seed 42            # repeatable run (useful when tuning)
 ./ron --scenario larkspur_lane --difficulty hard --no-color
+./ron --no-art             # text only
 ```
+
+## ASCII art
+
+Every room has a hand-drawn scene, shown whenever you enter or `look`. Door
+labels like `[2]` match the exit numbers you type. Below the scene, each
+person is drawn by their current state, with their letter underneath:
+
+```
+  * * *                                  <- stunned
+   O        \O/       O  __     O
+  /|\_       |       /|--'     (|)       _x__/_
+  / \       / \      / \       _/\_
+ [A]      [B]      [C]      [D]      [E]
+ ARMED    hands up AIMING   cuffed   dead
+```
+
+Flashbangs, C2, kicks, gunfire and traps get their own effects, and `mirror`
+shows the feet under the door. Type `art off` / `art on` mid-game (free), or
+start with `--no-art`. Everything stays under 58 columns so it fits a phone.
 
 ## Difficulty
 
@@ -114,6 +134,7 @@ template:
 - **doors**: `kind` is `door` or `opening`, plus optional `locked` and `trap` (`flash` / `explosive`)
 - **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon`, `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware` or `alert`)
 - **evidence**: objective items to collect
+- **art** (optional): a `<scenario_id>.art` file beside the JSON, with one `== room_id ==` block per room. Lines stay under 58 columns.
 
 ## Development
 

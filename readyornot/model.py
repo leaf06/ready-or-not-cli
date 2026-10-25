@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 # NPC states
@@ -126,3 +126,4 @@ class Scenario:
     doors: List[Door]
     npcs: List[NPC]
     evidence: List[Item]
+    art: Dict[str, List[str]] = field(default_factory=dict)  # room id -> ASCII scene
