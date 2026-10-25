@@ -51,6 +51,7 @@ PEOPLE (a <target> is their letter, like 'a')
   collect  (secure)           bag all evidence and weapons in the room
 OTHER
   wait (z) · status (s) · objectives (o) · help (?) · end (finish the mission)
+  art on|off                  show or hide the ASCII art (free)
 
 ROE: deadly force is authorized only against a suspect who is VISIBLY
 armed and not surrendering. 'Hands not visible' is not a weapon."""
@@ -351,6 +352,8 @@ class Game:
         acc += self.T.DISORIENTED_EXPOSURE if self.disoriented else 0
         if n.injured:
             acc *= self.T.INJURED_SUSPECT_ACCURACY
+        if n.weapon != "knife":
+            self.say("incoming", "fx")
         self.say(f"{self.label(n)} {w['verb']} {target.name}!", "danger")
         if self.rng.random() < acc:
             self.damage_officer(target, self.rng.randint(*w["damage"]), can_crit=True)
@@ -452,6 +455,7 @@ class Game:
 
     def trigger_trap(self, d: Door) -> None:
         trap, d.trap = d.trap, None
+        self.say(f"trap_{trap}", "fx")
         if trap == "flash":
             self.say("BANG! A flashbang rigged to the door goes off in your face!", "danger")
             self.disoriented = self.T.TRAP_FLASH_DISORIENT
@@ -533,6 +537,7 @@ class Game:
         self.noise(self.team_room, self.T.LOUD_RADIUS)
         if d.locked and self.rng.random() >= self.T.KICK_CHANCE:
             d.lock_known = True
+            self.say("kick_fail", "fx")
             self.say(f"You kick the {d.name}. It holds!", "warn")
             return False, True
         if d.trap:
@@ -540,6 +545,7 @@ class Game:
             if self.over:
                 return False, True
         d.state, d.locked = "broken", False
+        self.say("kick", "fx")
         self.reveal_room(dest, f"The {d.name} slams open")
         return True, True
 
@@ -552,6 +558,7 @@ class Game:
         self.inv["c2"] -= 1
         d.wedged = False
         dest = d.other(self.team_room)
+        self.say("c2", "fx")
         self.say(f"Breaching charge set... BOOM! The {d.name} blows inward.", "alert")
         if d.trap:
             d.trap = None
@@ -579,6 +586,7 @@ class Game:
     def apply_grenade(self, kind: str, room_id: str) -> None:
         g = self.T.GRENADES[kind]
         room = self.rooms[room_id]
+        self.say(kind, "fx")
         self.say({"flashbang": f"BANG! Flashbang goes off in the {room.name}.",
                   "stinger": f"CRACK! Stinger rounds pepper the {room.name}.",
                   "gas": f"Hiss... CS gas fills the {room.name}."}[kind], "alert")
@@ -613,6 +621,7 @@ class Game:
 
     def cmd_look(self, args) -> bool:
         room = self.rooms[self.team_room]
+        self.say(room.id, "scene")
         tag = "CLEARED" if room.cleared else ("exterior" if room.outdoor else "UNCLEARED")
         self.say(f"== {room.name} ({room.floor}) == [{tag}]", "title")
         self.say(room.desc, "info")
@@ -704,6 +713,7 @@ class Game:
             self.reveal_room(dest, f"You peek through the {d.name}")
             return True
         self.say(f"You slide the mirror gun under the {d.name}.", "info")
+        self.say(dest, "mirror")
         if d.trap:
             d.trap_known = True
             self.say(f"  There's {'a flashbang' if d.trap == 'flash' else 'an explosive'} "
@@ -923,6 +933,7 @@ class Game:
             return False
         authorized = self.deadly_authorized(n)
         acc = self.T.PLAYER_ACCURACY * (self.T.DISORIENTED_ACCURACY if self.disoriented else 1)
+        self.say("gunfire", "fx")
         self.say(f"You fire on {self.label(n)}.", "alert")
         self.noise(self.team_room, None)
         if self.rng.random() >= acc:

@@ -6,6 +6,7 @@ import string
 from pathlib import Path
 from typing import List
 
+from .art import load_room_art
 from .model import NPC, Door, Item, Room, Scenario
 
 SCENARIO_DIR = Path(__file__).parent / "scenarios"
@@ -48,4 +49,5 @@ def load_scenario(scenario_id: str) -> Scenario:
         doors=doors,
         npcs=npcs,
         evidence=evidence,
+        art=load_room_art(SCENARIO_DIR / f"{scenario_id}.art"),
     )

@@ -5,11 +5,15 @@ import argparse
 from typing import List, Optional
 
 from . import __version__
+from . import art
 from . import tuning as T
 from .engine import Game
 from .scenario import list_scenarios, load_scenario
 from .scoring import score
 from .ui import out, paint, rule, set_color
+
+ART_STYLES = {"scene": "info", "mirror": "radio", "fx": "alert"}
+FX_STYLES = {"incoming": "danger", "trap_flash": "danger", "trap_explosive": "danger"}
 
 try:  # command history and line editing; macOS ships libedit
     import readline  # noqa: F401
@@ -47,9 +51,34 @@ def choose(prompt: str, options: List[str]) -> int:
         out(f"Enter a number from 1 to {len(options)}.", "warn")
 
 
+class Settings:
+    art = True
+
+
+def art_lines(game: Game, kind: str, payload: str) -> List[str]:
+    if kind == "scene":
+        return art.scene(game.scenario.art.get(payload, []), game.room_npcs(payload))
+    if kind == "mirror":
+        return art.mirror_view(game.room_npcs(payload))
+    return art.FX.get(payload, [])
+
+
+def render(game: Game, messages) -> None:
+    """Print queued engine messages, turning art markers into pictures."""
+    for style, text in messages:
+        if style in ART_STYLES:
+            if Settings.art:
+                lines = art_lines(game, style, text)
+                if lines:
+                    pad = [""] if style == "scene" else []
+                    print(paint("\n".join(pad + lines + pad),
+                                FX_STYLES.get(text, ART_STYLES[style])))
+        else:
+            out(text, style)
+
+
 def flush(game: Game) -> None:
-    for style, text in game.drain():
-        out(text, style)
+    render(game, game.drain())
 
 
 def choose_difficulty() -> str:
@@ -97,6 +126,11 @@ def play(scenario_id: str, seed: Optional[int], difficulty: Optional[str] = None
         room = game.rooms[game.team_room].name
         prompt = f"\n[{game.clock} | {room} | {game.player.hp} HP] > "
         line = ask(prompt)
+        if line.lower().split()[:1] == ["art"]:
+            arg = line.lower().split()[1:2]
+            Settings.art = (arg != ["off"]) if arg else not Settings.art
+            out(f"ASCII art {'on' if Settings.art else 'off'}.", "dim")
+            continue
         if line.lower() in ("end", "quit", "exit", "exfil"):
             if not game.objectives_done():
                 if ask("Objectives aren't complete. End the mission anyway? (y/n) ").lower()[:1] != "y":
@@ -115,6 +149,9 @@ def debrief(game: Game) -> None:
     rule("title")
     headline = {"complete": "MISSION COMPLETE", "incomplete": "MISSION ENDED: objectives incomplete",
                 "kia": "MISSION FAILED: element lead KIA"}[game.outcome]
+    if Settings.art:
+        print(paint("\n".join(art.BANNERS[game.outcome]),
+                    "danger" if game.outcome == "kia" else "alert"))
     out(headline, "danger" if game.outcome == "kia" else "title")
     out(f"Time on target: {game.clock} · {T.DIFFICULTIES[game.difficulty]['label']}", "dim")
     rule("title")
@@ -159,12 +196,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="readyornot", description="Terminal tactical game.")
     ap.add_argument("--seed", type=int, help="fix the random seed (repeatable runs, for tuning)")
     ap.add_argument("--no-color", action="store_true", help="disable ANSI colours")
+    ap.add_argument("--no-art", action="store_true", help="text only, no ASCII art")
     ap.add_argument("--scenario", help="skip the menu and start this scenario id")
     ap.add_argument("--difficulty", choices=list(T.DIFFICULTIES),
                     help="skip the difficulty prompt")
     args = ap.parse_args(argv)
     if args.no_color:
         set_color(False)
+    if args.no_art:
+        Settings.art = False
 
     try:
         out(TITLE, "danger")
