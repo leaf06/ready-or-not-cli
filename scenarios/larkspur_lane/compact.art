@@ -1,4 +1,4 @@
-# Compact room art (narrow screens, e.g. phones). Each block starts with "== room_id ==".
+# Compact room art for this scenario (narrow screens, e.g. phones).
 # Used when the terminal is narrower than 80 columns.
 # Keep lines under 58 columns. [n] labels match the exit numbers in 'look'.
 

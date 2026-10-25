@@ -134,5 +134,8 @@ class Scenario:
     evidence: List[Item]
     # Optional departure clock: {"ticks": N, "pilot": npc id, "alert_rate": n, "verb": "..."}
     departure: Optional[dict] = None
+    # Optional per-outcome debrief overrides: {"complete": [banner lines], ...}
+    banners: Dict[str, List[str]] = field(default_factory=dict)
+    headlines: Dict[str, str] = field(default_factory=dict)
     art: Dict[str, List[str]] = field(default_factory=dict)          # detailed, 80 columns
     art_compact: Dict[str, List[str]] = field(default_factory=dict)  # narrow screens

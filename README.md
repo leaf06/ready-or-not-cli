@@ -1,11 +1,11 @@
-# Ready or Not: Terminal Tactical (v0.3.0)
+# Ready or Not: Terminal Tactical (v0.4.0)
 
 A turn-based, text-command SWAT game for the macOS Terminal, inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
 You mirror doors, breach, throw flashbangs, order suspects and civilians to
 comply, follow the rules of engagement, and get graded on how cleanly you did it.
 
-Three scenarios so far:
+Four scenarios so far:
 
 - **4180 Larkspur Lane** (Moderate): a narcotics warrant on a house with a basement drug lab.
 - **Delta Bottling Co.** (Hard): a raid on a Nuke packaging plant, an homage to the Nuke lab
@@ -17,6 +17,11 @@ Three scenarios so far:
   runs every deal from his boat so the money can go over the side at the first sign of trouble.
   The yacht is getting ready to leave: take the bridge before the captain casts off, stun the
   salon before the cash goes overboard, and hold the stern so Fuente can't reach the tender.
+- **Nakatomi Plaza** (Very Hard): a Christmas Eve hostage rescue, an homage to *Die Hard*.
+  Hans's crew has taken the 30th floor party, and Theo is cracking the vault's seven locks.
+  Stop Theo before the last one opens. Hans may pose as a hostage, and the barefoot man with
+  the submachine gun is a friendly. Fast-rope onto the roof or come in from the plaza (and
+  think about the garage gate before you do).
 
 ## Run it
 
@@ -109,6 +114,7 @@ already complied.
 - **Runners** (Delta Bottling Co.). Some suspects head for an escape door once alerted. If they get out, they're gone and the objective fails. A wedged door, or the team standing outside it, stops them.
 - **Departure clock** (Biscayne Lady). The captain is prepping to leave and will cast off after a set number of turns, much sooner once he's alerted. If the yacht leaves, the mission fails. A captain who's out of action, or off the helm, stops the clock. `status` shows the time left, and TOC calls it out.
 - **Dumping evidence** (Biscayne Lady). Some suspects destroy evidence once alerted and you're in the room with them. A stunned dumper can't.
+- **Armed civilians** (Nakatomi Plaza). A visible weapon usually marks a suspect, but an armed civilian shows as "Unknown" until you secure them. Read the briefing: shooting a friendly is unauthorized deadly force.
 - **Juveniles** (Delta Bottling Co.). Deadly force on a juvenile is never authorized, even if they're shooting at you. Tase them or talk them down. Their figures read `KID+GUN` / `KID AIMS`.
 - **Crits.** Some hits find a gap in the armor and ignore it. Walking into an unscouted room can kill you.
 - **Scarce kit.** On Medium and Hard, loadouts carry fewer grenades than there are rooms, so decide where they count.
@@ -147,21 +153,37 @@ for runners, so they rarely complete it. Wedging the dock first (from the
 alley) is what makes it winnable. The same goes for `--scenario biscayne_lady`:
 the bots ignore the bridge, so the yacht usually leaves. Taking the bridge,
 then the salon, then holding the swim platform completes it in about 63% of
-Medium runs.
+Medium runs. For `--scenario nakatomi`, wedging the garage gate from the plaza
+and then going straight for Theo completes about 83% of Medium runs.
 
 ## Adding scenarios
 
-Drop a new JSON file in `readyornot/scenarios/` and it appears in the menu.
-Use [`larkspur_lane.json`](readyornot/scenarios/larkspur_lane.json) as the
+Each scenario is a folder in [`scenarios/`](scenarios/) at the project root,
+named after its id:
+
+```
+scenarios/
+  larkspur_lane/
+    scenario.json   rooms, doors, people, evidence, briefing
+    detailed.art    80-column scenes
+    compact.art     phone-sized scenes
+  nuke_lab/
+  biscayne_lady/
+  nakatomi/
+```
+
+Add a folder and it appears in the menu. The `id` inside `scenario.json` must
+match the folder name. Copy [`larkspur_lane/`](scenarios/larkspur_lane/) as a
 template:
 
 - **rooms**: an `entry: true` room is a starting point, and `outdoor` rooms are off-limits to suspects
 - **doors**: `kind` is `door` or `opening`, plus optional `locked` and `trap` (`flash` / `explosive`)
 - **doors**: also optional `escape: true` for a door runners can flee through
-- **departure** (optional): `{"ticks": 45, "pilot": "<npc id>", "alert_rate": 3, ...}` gives the scenario a clock that runs while the pilot is free at their starting room; see `biscayne_lady.json`
+- **departure** (optional): `{"ticks": 45, "pilot": "<npc id>", "alert_rate": 3, ...}` gives the scenario a clock that runs while the pilot is free at their starting room; see `biscayne_lady/` (a yacht leaving) and `nakatomi/` (a vault opening)
+- **banners** / **headlines** (optional): per-outcome debrief art and titles, keyed by `complete`, `incomplete`, `departed` or `kia`
 - **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon` (`pistol`, `shotgun`, `rifle`, `smg`, `knife`), `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware`, `alert`, or `surrendered` with `bound: true` for someone tied up). `escapes: true` makes them run for an escape door, `dumps: true` makes them destroy evidence, and `minor: true` makes deadly force against them unauthorized.
 - **evidence**: objective items to collect
-- **art** (optional): `<scenario_id>.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `<scenario_id>.compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
+- **art**: `detailed.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
 
 ## Development
 

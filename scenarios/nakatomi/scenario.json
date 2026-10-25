@@ -1,0 +1,322 @@
+{
+  "id": "nakatomi",
+  "title": "Nakatomi Plaza",
+  "subtitle": "Christmas Eve hostage rescue (a Die Hard homage)",
+  "difficulty": "Very Hard",
+  "briefing": [
+    "TOC: Element, Christmas Eve, Century City. Nakatomi Plaza is locked down. A crew of armed men took the 30th floor during the company Christmas party, and they are not terrorists, whatever they say on the radio. They're thieves, and they're after six hundred million dollars in bearer bonds in the Nakatomi vault.",
+    "Their technician, Theo, is working through the vault's seven locks from a computer room off the party floor. When the last lock opens they walk out with the bonds, and we believe they've wired the roof to blow to cover their exit. Stop Theo and you stop the clock. Their leader, Hans, is calm, educated and dangerous. He may try to pass himself off as a hostage. Trust nobody in a nice suit until they're cuffed.",
+    "Known positions: a man posing as the lobby security guard, one loading a truck in the parking garage, two gunmen holding the party guests on 30, Hans's number two, Karl, with Theo in the computer room, and a man wiring charges on the roof. Karl will not surrender. An ambulance is parked in the garage. That's their way out.",
+    "Friendly in the building: an off-duty NYPD officer who was at the party is moving through the upper floors. He's armed, barefoot, and in a dirty undershirt. Do NOT engage him. Secure him like anyone else. A limo driver is also somewhere in the garage, probably still listening to the radio.",
+    "Objectives: arrest or neutralize the crew, rescue every hostage, and recover Theo's vault laptop, the detonator bag and the roof charges. Report everyone to TOC. Rules of engagement: deadly force only against a suspect who is visibly armed and not surrendering. You can come in through the plaza or fast-rope onto the roof. Merry Christmas. Bring order to chaos."
+  ],
+  "departure": {
+    "ticks": 50,
+    "pilot": "theo",
+    "pilot_title": "vault technician",
+    "alert_rate": 2,
+    "warning": "Theo is through another of the vault's seven locks",
+    "departed": "Far below, the seventh lock lets go and the vault swings open. Seconds later the charges on the roof go off, lighting up Century City like a Christmas tree. TOC: \"Element... they're in the vault. The roof is gone. Pull back.\""
+  },
+  "headlines": {
+    "complete": "MISSION COMPLETE: Merry Christmas",
+    "departed": "MISSION FAILED: the vault opened and the roof blew"
+  },
+  "banners": {
+    "complete": [
+      "              *",
+      "             /.\\           *        .      *",
+      "            /..'\\      M E R R Y",
+      "            /'.'\\     C H R I S T M A S",
+      "           /.''.'\\   .      *     .",
+      "           /.'.'.\\    ~ the party's over ~",
+      "          /'.''.'.\\         *        .",
+      "          ^^^[_]^^^    ho  ho  ho"
+    ],
+    "departed": [
+      "  ============================================",
+      "   V A U L T   O P E N  .  R O O F   G O N E",
+      "  ============================================",
+      "        * BOOM *     over Century City"
+    ]
+  },
+  "rooms": [
+    {
+      "id": "plaza",
+      "name": "Plaza",
+      "floor": "Exterior",
+      "outdoor": true,
+      "entry": true,
+      "desc": "The forecourt of Nakatomi Plaza on Christmas Eve. Palm trees wrapped in lights, a giant lit tree by the fountain, and squad cars everywhere. Thirty-odd floors of glass tower over you."
+    },
+    {
+      "id": "helipad",
+      "name": "Helicopter",
+      "floor": "Exterior",
+      "outdoor": true,
+      "entry": true,
+      "desc": "An LAPD helicopter hovering over the roof, rotors thumping. Ropes are out and the roof is right below."
+    },
+    {
+      "id": "lobby",
+      "name": "Lobby",
+      "floor": "Ground",
+      "desc": "A marble lobby with a lit Christmas tree, wrapped presents under it and a fountain. A lone security guard sits at the front desk, and carols are playing quietly on the PA."
+    },
+    {
+      "id": "garage",
+      "name": "Parking Garage",
+      "floor": "Ground",
+      "desc": "A concrete garage. A box truck stands open by the elevators, an ambulance is parked with its doors open, and a long black limo idles in the corner with music thumping inside."
+    },
+    {
+      "id": "stairwell",
+      "name": "Fire Stairs",
+      "floor": "Stairwell",
+      "desc": "Thirty-odd floors of concrete fire stairs. Doors open onto 30, the unfinished 32nd floor, and the roof."
+    },
+    {
+      "id": "party",
+      "name": "30th Floor Party",
+      "floor": "30th floor",
+      "desc": "The Nakatomi Christmas party: a two-story atrium, a huge decorated tree, a buffet, balloons, and party guests in Santa hats sitting on the floor with their hands on their heads."
+    },
+    {
+      "id": "computer",
+      "name": "Computer Room",
+      "floor": "30th floor",
+      "desc": "A humming room of terminals by the vault. A laptop is wired into the vault controls, and one monitor shows a lock diagram: seven locks, most of them green."
+    },
+    {
+      "id": "ducts",
+      "name": "Air Ducts",
+      "floor": "Between floors",
+      "desc": "A cramped steel air duct. You're crawling on your elbows, and somebody left a bag up here."
+    },
+    {
+      "id": "unfinished",
+      "name": "32nd Floor",
+      "floor": "32nd floor",
+      "desc": "An unfinished floor: bare concrete, plastic sheeting, scaffolding, a few office chairs and broken glass everywhere. Wind whistles through the open framing."
+    },
+    {
+      "id": "roof",
+      "name": "Roof",
+      "floor": "Roof",
+      "desc": "The roof at night, wind howling. A helipad, antennas, and bricks of plastic explosive taped along the parapet, with wires running back to a junction box."
+    }
+  ],
+  "doors": [
+    {
+      "id": "lobby_doors",
+      "a": "plaza",
+      "b": "lobby",
+      "name": "lobby doors",
+      "locked": true
+    },
+    {
+      "id": "garage_gate",
+      "a": "plaza",
+      "b": "garage",
+      "name": "garage gate",
+      "locked": true,
+      "escape": true
+    },
+    {
+      "id": "roof_rope",
+      "a": "helipad",
+      "b": "roof",
+      "name": "fast-rope",
+      "kind": "opening"
+    },
+    {
+      "id": "service",
+      "a": "lobby",
+      "b": "garage",
+      "name": "service corridor"
+    },
+    {
+      "id": "fire_stairs",
+      "a": "lobby",
+      "b": "stairwell",
+      "name": "fire stairs door"
+    },
+    {
+      "id": "door30",
+      "a": "stairwell",
+      "b": "party",
+      "name": "30th floor door"
+    },
+    {
+      "id": "door32",
+      "a": "stairwell",
+      "b": "unfinished",
+      "name": "32nd floor door"
+    },
+    {
+      "id": "roof_door",
+      "a": "stairwell",
+      "b": "roof",
+      "name": "roof door",
+      "trap": "flash"
+    },
+    {
+      "id": "computer_door",
+      "a": "party",
+      "b": "computer",
+      "name": "computer room door",
+      "locked": true
+    },
+    {
+      "id": "duct_in",
+      "a": "unfinished",
+      "b": "ducts",
+      "name": "air duct",
+      "kind": "opening"
+    },
+    {
+      "id": "vent",
+      "a": "ducts",
+      "b": "computer",
+      "name": "vent grate"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "eddie",
+      "kind": "suspect",
+      "desc": "security guard at the front desk",
+      "room": "lobby",
+      "weapon": "pistol",
+      "concealed": true,
+      "resistance": 0.6,
+      "aggression": 0.5
+    },
+    {
+      "id": "argyle",
+      "kind": "civilian",
+      "desc": "limo driver, music blasting",
+      "room": "garage",
+      "resistance": 0.3
+    },
+    {
+      "id": "trucker",
+      "kind": "suspect",
+      "desc": "gunman loading the box truck",
+      "room": "garage",
+      "weapon": "smg",
+      "resistance": 0.7,
+      "aggression": 0.6
+    },
+    {
+      "id": "uli",
+      "kind": "suspect",
+      "desc": "gunman eating a candy bar",
+      "room": "party",
+      "weapon": "rifle",
+      "resistance": 0.65,
+      "aggression": 0.55
+    },
+    {
+      "id": "franco",
+      "kind": "suspect",
+      "desc": "gunman by the Christmas tree",
+      "room": "party",
+      "weapon": "rifle",
+      "resistance": 0.7,
+      "aggression": 0.6
+    },
+    {
+      "id": "holly",
+      "kind": "civilian",
+      "desc": "Holly, a composed executive",
+      "room": "party",
+      "resistance": 0.25
+    },
+    {
+      "id": "ellis",
+      "kind": "civilian",
+      "desc": "Ellis, a smug executive",
+      "room": "party",
+      "resistance": 0.7
+    },
+    {
+      "id": "guest1",
+      "kind": "civilian",
+      "desc": "guest in a Santa hat",
+      "room": "party",
+      "resistance": 0.3
+    },
+    {
+      "id": "guest2",
+      "kind": "civilian",
+      "desc": "guest clutching eggnog",
+      "room": "party",
+      "resistance": 0.4
+    },
+    {
+      "id": "theo",
+      "kind": "suspect",
+      "desc": "Theo, at the vault terminal",
+      "room": "computer",
+      "resistance": 0.5,
+      "aggression": 0.0
+    },
+    {
+      "id": "karl",
+      "kind": "suspect",
+      "desc": "Karl, long blond hair",
+      "room": "computer",
+      "weapon": "rifle",
+      "resistance": 0.97,
+      "aggression": 0.9,
+      "state": "alert"
+    },
+    {
+      "id": "hans",
+      "kind": "suspect",
+      "desc": "man in a suit who says he's a hostage",
+      "room": "unfinished",
+      "weapon": "pistol",
+      "concealed": true,
+      "resistance": 0.85,
+      "aggression": 0.45,
+      "escapes": true
+    },
+    {
+      "id": "mcclane",
+      "kind": "civilian",
+      "desc": "barefoot man in an undershirt",
+      "room": "unfinished",
+      "weapon": "smg",
+      "resistance": 0.55,
+      "state": "alert"
+    },
+    {
+      "id": "heinrich",
+      "kind": "suspect",
+      "desc": "gunman wiring the roof",
+      "room": "roof",
+      "weapon": "rifle",
+      "resistance": 0.65,
+      "aggression": 0.6
+    }
+  ],
+  "evidence": [
+    {
+      "id": "laptop",
+      "name": "vault laptop",
+      "room": "computer"
+    },
+    {
+      "id": "detonators",
+      "name": "detonator bag",
+      "room": "ducts"
+    },
+    {
+      "id": "c4",
+      "name": "roof charges",
+      "room": "roof"
+    }
+  ]
+}

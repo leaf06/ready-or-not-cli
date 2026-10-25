@@ -1,4 +1,11 @@
-"""Load scenario JSON files from readyornot/scenarios/."""
+"""Load scenarios from the scenarios/ folder at the project root.
+
+Each scenario is a folder named after its id:
+
+    scenarios/<id>/scenario.json   rooms, doors, people, evidence, briefing
+    scenarios/<id>/detailed.art    80-column scenes (optional)
+    scenarios/<id>/compact.art     phone-sized scenes (optional)
+"""
 from __future__ import annotations
 
 import json
@@ -9,12 +16,12 @@ from typing import List
 from .art import load_room_art
 from .model import NPC, Door, Item, Room, Scenario
 
-SCENARIO_DIR = Path(__file__).parent / "scenarios"
+SCENARIO_DIR = Path(__file__).resolve().parent.parent / "scenarios"
 
 
 def list_scenarios() -> List[dict]:
     out = []
-    for path in sorted(SCENARIO_DIR.glob("*.json")):
+    for path in sorted(SCENARIO_DIR.glob("*/scenario.json")):
         data = json.loads(path.read_text())
         out.append({k: data[k] for k in ("id", "title", "subtitle", "difficulty")})
     return out
@@ -22,7 +29,11 @@ def list_scenarios() -> List[dict]:
 
 def load_scenario(scenario_id: str) -> Scenario:
     """Build a fresh Scenario (new objects every call, so each run starts clean)."""
-    data = json.loads((SCENARIO_DIR / f"{scenario_id}.json").read_text())
+    folder = SCENARIO_DIR / scenario_id
+    data = json.loads((folder / "scenario.json").read_text())
+    if data["id"] != scenario_id:
+        raise ValueError(f"{folder}/scenario.json has id {data['id']!r}; "
+                         f"it must match its folder name")
     rooms = [Room(**r) for r in data["rooms"]]
     by_id = {r.id: r for r in rooms}
     doors = [Door(**d) for d in data["doors"]]
@@ -50,6 +61,8 @@ def load_scenario(scenario_id: str) -> Scenario:
         npcs=npcs,
         evidence=evidence,
         departure=data.get("departure"),
-        art=load_room_art(SCENARIO_DIR / f"{scenario_id}.art"),
-        art_compact=load_room_art(SCENARIO_DIR / f"{scenario_id}.compact.art"),
+        banners=data.get("banners", {}),
+        headlines=data.get("headlines", {}),
+        art=load_room_art(folder / "detailed.art"),
+        art_compact=load_room_art(folder / "compact.art"),
     )
