@@ -50,4 +50,5 @@ def load_scenario(scenario_id: str) -> Scenario:
         npcs=npcs,
         evidence=evidence,
         art=load_room_art(SCENARIO_DIR / f"{scenario_id}.art"),
+        art_compact=load_room_art(SCENARIO_DIR / f"{scenario_id}.compact.art"),
     )

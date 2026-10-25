@@ -1,4 +1,4 @@
-# Ready or Not: Terminal Tactical (v0.1.3)
+# Ready or Not: Terminal Tactical (v0.1.4)
 
 A turn-based, text-command SWAT game for the macOS Terminal, inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
@@ -24,9 +24,14 @@ git clone <this repo> && cd ready-or-not-cli
 
 ## ASCII art
 
-Every room has a hand-drawn scene, shown whenever you enter or `look`. Door
-labels like `[2]` match the exit numbers you type. Below the scene, each
-person is drawn by their current state, with their letter underneath:
+Every room has a hand-drawn scene, shown whenever you enter or `look`. In an
+80-column terminal you get a detailed first-person view through the doorway:
+back wall, side walls and floor in perspective, with the people in the room
+standing on the floor. On narrower screens (like a phone) the game switches
+to compact scenes, with people in a strip underneath. Door labels like `[2]`
+match the exit numbers you type, and exits behind you are labeled along the
+ceiling. Each person is drawn by their current state, with their letter
+underneath:
 
 ```
   * * *                                  <- stunned
@@ -39,7 +44,7 @@ person is drawn by their current state, with their letter underneath:
 
 Flashbangs, C2, kicks, gunfire and traps get their own effects, and `mirror`
 shows the feet under the door. Type `art off` / `art on` mid-game (free), or
-start with `--no-art`. Everything stays under 58 columns so it fits a phone.
+start with `--no-art`.
 
 ## Difficulty
 
@@ -134,7 +139,7 @@ template:
 - **doors**: `kind` is `door` or `opening`, plus optional `locked` and `trap` (`flash` / `explosive`)
 - **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon`, `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware` or `alert`)
 - **evidence**: objective items to collect
-- **art** (optional): a `<scenario_id>.art` file beside the JSON, with one `== room_id ==` block per room. Lines stay under 58 columns.
+- **art** (optional): `<scenario_id>.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `<scenario_id>.compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
 
 ## Development
 

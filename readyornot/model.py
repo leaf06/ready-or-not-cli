@@ -126,4 +126,5 @@ class Scenario:
     doors: List[Door]
     npcs: List[NPC]
     evidence: List[Item]
-    art: Dict[str, List[str]] = field(default_factory=dict)  # room id -> ASCII scene
+    art: Dict[str, List[str]] = field(default_factory=dict)          # detailed, 80 columns
+    art_compact: Dict[str, List[str]] = field(default_factory=dict)  # narrow screens

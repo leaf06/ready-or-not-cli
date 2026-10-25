@@ -5,7 +5,7 @@ import argparse
 from typing import List, Optional
 
 from . import __version__
-from . import art
+from . import art, ui
 from . import tuning as T
 from .engine import Game
 from .scenario import list_scenarios, load_scenario
@@ -57,7 +57,9 @@ class Settings:
 
 def art_lines(game: Game, kind: str, payload: str) -> List[str]:
     if kind == "scene":
-        return art.scene(game.scenario.art.get(payload, []), game.room_npcs(payload))
+        detailed = payload in game.scenario.art and ui.width() >= art.DETAILED_WIDTH
+        room_art = (game.scenario.art if detailed else game.scenario.art_compact).get(payload, [])
+        return art.scene(room_art, game.room_npcs(payload), detailed)
     if kind == "mirror":
         return art.mirror_view(game.room_npcs(payload))
     return art.FX.get(payload, [])
