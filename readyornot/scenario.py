@@ -22,7 +22,7 @@ SCENARIO_DIR = Path(__file__).resolve().parent.parent / "scenarios"
 def list_scenarios() -> List[dict]:
     out = []
     for path in sorted(SCENARIO_DIR.glob("*/scenario.json")):
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         out.append({k: data[k] for k in ("id", "title", "subtitle", "difficulty")})
     return out
 
@@ -30,7 +30,7 @@ def list_scenarios() -> List[dict]:
 def load_scenario(scenario_id: str) -> Scenario:
     """Build a fresh Scenario (new objects every call, so each run starts clean)."""
     folder = SCENARIO_DIR / scenario_id
-    data = json.loads((folder / "scenario.json").read_text())
+    data = json.loads((folder / "scenario.json").read_text(encoding="utf-8"))
     if data["id"] != scenario_id:
         raise ValueError(f"{folder}/scenario.json has id {data['id']!r}; "
                          f"it must match its folder name")

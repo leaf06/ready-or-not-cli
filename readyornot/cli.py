@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from typing import List, Optional
 
 from . import __version__
@@ -15,7 +16,7 @@ from .ui import out, paint, rule, set_color
 ART_STYLES = {"scene": "info", "mirror": "radio", "fx": "alert"}
 FX_STYLES = {"incoming": "danger", "trap_flash": "danger", "trap_explosive": "danger"}
 
-try:  # command history and line editing; macOS ships libedit
+try:  # command history and line editing; macOS ships libedit, Windows has neither
     import readline  # noqa: F401
 except ImportError:
     pass
@@ -207,6 +208,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--difficulty", choices=list(T.DIFFICULTIES),
                     help="skip the difficulty prompt")
     args = ap.parse_args(argv)
+    if hasattr(sys.stdout, "reconfigure"):  # never crash on a console code page that lacks a character
+        sys.stdout.reconfigure(errors="replace")
     if args.no_color:
         set_color(False)
     if args.no_art:

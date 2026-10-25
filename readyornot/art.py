@@ -29,7 +29,7 @@ def load_room_art(path: Path) -> Dict[str, List[str]]:
     if not path.exists():
         return art
     current = None
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         if line.startswith("#"):
             continue
         if line.startswith("== ") and line.rstrip().endswith(" =="):
