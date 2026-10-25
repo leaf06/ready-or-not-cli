@@ -248,6 +248,48 @@ class V02Tests(unittest.TestCase):
         self.assertGreater(npc(g, "coyle").stunned, 0)
 
 
+class DifficultyTests(unittest.TestCase):
+    def test_presets_do_not_leak_into_each_other(self):
+        hard = Game(load_scenario("larkspur_lane"), "standard", "front_yard", difficulty="hard")
+        easy = Game(load_scenario("larkspur_lane"), "standard", "front_yard", difficulty="easy")
+        self.assertEqual(easy.T.MIRROR_SPOTTED_CHANCE, 0.0)
+        self.assertGreater(hard.T.MIRROR_SPOTTED_CHANCE, 0.0)
+        self.assertEqual(T.MIRROR_SPOTTED_CHANCE, T.settings("medium").MIRROR_SPOTTED_CHANCE)
+        hard.T.LOADOUTS["standard"]["items"]["flashbang"] = 99
+        self.assertNotEqual(T.LOADOUTS["standard"]["items"]["flashbang"], 99)
+
+    def test_easy_matches_original_v010_kit(self):
+        easy = Game(load_scenario("larkspur_lane"), "less_lethal", "front_yard", difficulty="easy")
+        self.assertEqual(easy.inv["flashbang"], 4)
+        self.assertEqual(easy.inv["c2"], 1)
+
+    def test_easy_mirror_never_draws_fire(self):
+        g = Game(load_scenario("larkspur_lane"), "standard", "hallway",
+                 rng=Rigged(0.0), difficulty="easy")
+        g.execute("mirror master")
+        self.assertTrue(all(o.hp == o.max_hp for o in g.officers))
+
+    def test_hard_suspects_resist_more(self):
+        med = new_game()
+        hard = Game(load_scenario("larkspur_lane"), "standard", "front_yard", difficulty="hard")
+        self.assertLess(hard.comply_chance(npc(hard, "coyle")), med.comply_chance(npc(med, "coyle")))
+        # civilians are unaffected
+        self.assertEqual(hard.comply_chance(npc(hard, "tasha")), med.comply_chance(npc(med, "tasha")))
+
+    def test_every_difficulty_plays_without_crashing(self):
+        for difficulty in T.DIFFICULTIES:
+            for seed in range(30):
+                rng = random.Random(seed)
+                g = Game(load_scenario("larkspur_lane"), rng.choice(list(T.LOADOUTS)),
+                         "front_yard", seed=seed, difficulty=difficulty)
+                for _ in range(80):
+                    if g.over:
+                        break
+                    g.execute(rng.choice(FuzzTests.COMMANDS))
+                g.end_mission()
+                score(g)
+
+
 class FuzzTests(unittest.TestCase):
     COMMANDS = ["look", "map", "status", "o", "help", "yell", "wait", "collect", "report",
                 "report all", "move 1", "move 2", "move 3", "mirror 1", "mirror 2", "open 1",

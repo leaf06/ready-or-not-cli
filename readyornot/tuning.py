@@ -3,7 +3,12 @@
 v0.1 exists to tune mechanics, so if something feels off (suspects too
 trigger-happy, flashbangs too strong, etc.) this is the file to edit.
 Probabilities are 0.0-1.0. One "tick" is one player action.
+
+The values below are MEDIUM. DIFFICULTIES at the bottom lists what Easy
+and Hard change; settings(name) resolves a full copy for one game.
 """
+import copy
+from types import SimpleNamespace
 
 SECONDS_PER_TICK = 6
 
@@ -110,3 +115,82 @@ PENALTY_UNAUTHORIZED_DEADLY = 15
 PENALTY_CIVILIAN_KILLED = 20
 PENALTY_CIVILIAN_INJURED = 3
 GRADES = [(95, "S"), (90, "A"), (80, "B"), (70, "C"), (60, "D"), (0, "F")]
+# Hard-only knobs (neutral on Easy and Medium).
+SUSPECT_ACCURACY_MULT = 1.0     # multiplier on every suspect weapon's accuracy
+SUSPECT_RESISTANCE_BONUS = 0.0  # added to every suspect's resistance (harder to make comply)
+
+# --- Difficulty presets -----------------------------------------------------
+# Only what differs from the Medium values above. LOADOUTS replace whole kits.
+DIFFICULTIES = {
+    "easy": {
+        "label": "Easy",
+        "desc": "Forgiving. Intel and utility are risk-free and you carry plenty of grenades.",
+        "overrides": {
+            "CRIT_CHANCE": 0.20,
+            "POINT_MAN_TARGET_CHANCE": 0.40,
+            "TEAM_RETURN_FIRE": 0.50,
+            "STUN_RESIST_CHANCE": 0.0,
+            "DISARM_FAIL_CHANCE": 0.0,
+            "MIRROR_SPOTTED_CHANCE": 0.0,
+            "ESCALATION_CHANCE": 0.60,
+            "QUICK_DRAW_CHANCE": 0.50,
+            "ROAM_CHANCE": 0.12,
+            "FLANK_HOSTILE_CHANCE": 0.50,
+            "LOADOUTS": {
+                "standard": {"flashbang": 3, "stinger": 2, "gas": 1, "c2": 2, "wedge": 3},
+                "breacher": {"flashbang": 2, "stinger": 1, "gas": 1, "c2": 4, "wedge": 2},
+                "less_lethal": {"flashbang": 4, "stinger": 3, "gas": 2, "c2": 1, "wedge": 2},
+            },
+        },
+    },
+    "medium": {
+        "label": "Medium",
+        "desc": "Careful play is rewarded but never safe. Gear is scarce.",
+        "overrides": {},
+    },
+    "hard": {
+        "label": "Hard",
+        "desc": "Suspects are sharper, tougher to break, and quicker to fight. One mistake can end it.",
+        "overrides": {
+            "ARMOR_REDUCTION": 0.15,
+            "CRIT_CHANCE": 0.30,
+            "POINT_MAN_TARGET_CHANCE": 0.80,
+            "TEAM_RETURN_FIRE": 0.40,
+            "KICK_CHANCE": 0.45,
+            "STUN_RESIST_CHANCE": 0.55,
+            "DISARM_FAIL_CHANCE": 0.15,
+            "MIRROR_SPOTTED_CHANCE": 0.50,
+            "AMBUSH_CHANCE": 0.90,
+            "ESCALATION_CHANCE": 0.90,
+            "QUICK_DRAW_CHANCE": 0.85,
+            "FAKE_SURRENDER_CHANCE": 0.35,
+            "SURRENDER_LAPSE_CHANCE": 0.30,
+            "ROAM_CHANCE": 0.22,
+            "FLANK_HOSTILE_CHANCE": 0.85,
+            "SUSPECT_ACCURACY_MULT": 1.15,
+            "SUSPECT_RESISTANCE_BONUS": 0.10,
+            "LOADOUTS": {
+                "standard": {"flashbang": 2, "stinger": 1, "gas": 0, "c2": 1, "wedge": 1},
+                "breacher": {"flashbang": 1, "stinger": 0, "gas": 0, "c2": 3, "wedge": 1},
+                "less_lethal": {"flashbang": 2, "stinger": 2, "gas": 1, "c2": 0, "wedge": 1},
+            },
+        },
+    },
+}
+DEFAULT_DIFFICULTY = "medium"
+
+
+def settings(difficulty: str = DEFAULT_DIFFICULTY) -> SimpleNamespace:
+    """A private copy of every knob with the difficulty's overrides applied.
+
+    Each Game holds its own copy, so presets never leak between games.
+    """
+    values = {k: copy.deepcopy(v) for k, v in globals().items() if k.isupper()}
+    for key, val in DIFFICULTIES[difficulty]["overrides"].items():
+        if key == "LOADOUTS":
+            for kit, items in val.items():
+                values["LOADOUTS"][kit]["items"] = dict(items)
+        else:
+            values[key] = val
+    values["DIFFICULTY"] = difficulty
+    return SimpleNamespace(**values)

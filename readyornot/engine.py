@@ -14,7 +14,7 @@ import random
 from collections import deque
 from typing import Dict, List, Optional, Tuple
 
-from . import tuning as T
+from . import tuning
 from .model import (ALERT, DEAD, HOSTILE, INCAPACITATED, RESTRAINED, SURRENDERED,
                     UNAWARE, NPC, Door, Item, Officer, Scenario)
 
@@ -58,15 +58,19 @@ armed and not surrendering. 'Hands not visible' is not a weapon."""
 
 class Game:
     def __init__(self, scenario: Scenario, loadout: str, entry: str,
-                 seed: Optional[int] = None, rng: Optional[random.Random] = None):
+                 seed: Optional[int] = None, rng: Optional[random.Random] = None,
+                 difficulty: str = tuning.DEFAULT_DIFFICULTY):
+        self.T = tuning.settings(difficulty)
+        self.difficulty = difficulty
         self.rng = rng or random.Random(seed)
         self.scenario = scenario
         self.rooms = {r.id: r for r in scenario.rooms}
         self.doors = {d.id: d for d in scenario.doors}
         self.npcs: List[NPC] = scenario.npcs
         self.items: Dict[str, Item] = {i.id: i for i in scenario.evidence}
-        self.officers = [Officer(n, is_player=(i == 0)) for i, n in enumerate(T.OFFICER_NAMES)]
-        self.inv = dict(T.LOADOUTS[loadout]["items"])
+        self.officers = [Officer(n, hp=self.T.OFFICER_HP, max_hp=self.T.OFFICER_HP, is_player=(i == 0))
+                         for i, n in enumerate(self.T.OFFICER_NAMES)]
+        self.inv = dict(self.T.LOADOUTS[loadout]["items"])
         self.loadout = loadout
         self.time = 0
         self.disoriented = 0
@@ -125,7 +129,7 @@ class Game:
 
     @property
     def clock(self) -> str:
-        s = self.time * T.SECONDS_PER_TICK
+        s = self.time * self.T.SECONDS_PER_TICK
         return f"T+{s // 60:02d}:{s % 60:02d}"
 
     def room_npcs(self, room_id: str) -> List[NPC]:
@@ -282,10 +286,10 @@ class Game:
                 self.say(f"{self.label(n)} notices you.", "warn")
             elif (n.state == ALERT and n.kind == "suspect" and n.weapon
                   and not self.just_entered
-                  and self.rng.random() < n.aggression * T.ESCALATION_CHANCE):
+                  and self.rng.random() < n.aggression * self.T.ESCALATION_CHANCE):
                 self.go_hostile(n)
             elif (n.state == SURRENDERED and n.kind == "suspect" and n.weapon
-                  and self.rng.random() < n.aggression * T.FAKE_SURRENDER_CHANCE):
+                  and self.rng.random() < n.aggression * self.T.FAKE_SURRENDER_CHANCE):
                 self.say(f"{self.label(n)} was faking it and pulls a hidden {n.weapon}!", "danger")
                 self.go_hostile(n)
 
@@ -296,11 +300,11 @@ class Game:
             if n.state == HOSTILE:
                 n.state = ALERT
             if (n.state == SURRENDERED and not n.bound
-                    and self.rng.random() < T.SURRENDER_LAPSE_CHANCE):
+                    and self.rng.random() < self.T.SURRENDER_LAPSE_CHANCE):
                 n.state = ALERT
                 self.rearm(n)
             if (n.kind == "suspect" and n.state == ALERT and not n.stunned
-                    and self.rng.random() < T.ROAM_CHANCE):
+                    and self.rng.random() < self.T.ROAM_CHANCE):
                 self.npc_move(n, allow_team_room=True)
 
         # 4. Timers.
@@ -321,17 +325,17 @@ class Game:
     # ------------------------------------------------------------------ combat
     def pick_target(self) -> Officer:
         mates = [o for o in self.officers[1:] if not o.down]
-        chance = T.POINT_MAN_TARGET_CHANCE if self.just_entered else T.PLAYER_TARGET_CHANCE
+        chance = self.T.POINT_MAN_TARGET_CHANCE if self.just_entered else self.T.PLAYER_TARGET_CHANCE
         if not mates or self.rng.random() < chance:
             return self.player
         return self.rng.choice(mates)
 
     def damage_officer(self, o: Officer, raw: int, can_crit: bool = False) -> None:
-        if can_crit and self.rng.random() < T.CRIT_CHANCE:
-            dmg = round(raw * T.CRIT_MULTIPLIER)
+        if can_crit and self.rng.random() < self.T.CRIT_CHANCE:
+            dmg = round(raw * self.T.CRIT_MULTIPLIER)
             self.say("  Critical hit, past the armor!", "danger")
         else:
-            dmg = max(1, round(raw * (1 - T.ARMOR_REDUCTION)))
+            dmg = max(1, round(raw * (1 - self.T.ARMOR_REDUCTION)))
         o.hp = max(0, o.hp - dmg)
         if o.down:
             self.say(f"  {o.name} {'are' if o.is_player else 'is'} DOWN!", "danger")
@@ -341,11 +345,12 @@ class Game:
             self.say(f"  {o.name} hit (-{dmg} HP, {o.hp} left).", "danger")
 
     def suspect_attack(self, n: NPC) -> None:
-        w = T.WEAPONS[n.weapon]
+        w = self.T.WEAPONS[n.weapon]
         target = self.pick_target()
-        acc = w["accuracy"] + (T.DISORIENTED_EXPOSURE if self.disoriented else 0)
+        acc = w["accuracy"] * self.T.SUSPECT_ACCURACY_MULT
+        acc += self.T.DISORIENTED_EXPOSURE if self.disoriented else 0
         if n.injured:
-            acc *= T.INJURED_SUSPECT_ACCURACY
+            acc *= self.T.INJURED_SUSPECT_ACCURACY
         self.say(f"{self.label(n)} {w['verb']} {target.name}!", "danger")
         if self.rng.random() < acc:
             self.damage_officer(target, self.rng.randint(*w["damage"]), can_crit=True)
@@ -356,7 +361,7 @@ class Game:
         if self.over:
             return
         mates = [o for o in self.officers[1:] if not o.down]
-        if mates and self.rng.random() < T.TEAM_RETURN_FIRE:
+        if mates and self.rng.random() < self.T.TEAM_RETURN_FIRE:
             shooter = self.rng.choice(mates)
             self.say(f"  {shooter.name} returns fire.", "alert")
             self.neutralize(n, by="team")
@@ -367,7 +372,7 @@ class Game:
         n.identified = True
         if immediate:
             n.hostile_since = -1
-        elif not self.in_tick and self.rng.random() < n.aggression * T.QUICK_DRAW_CHANCE:
+        elif not self.in_tick and self.rng.random() < n.aggression * self.T.QUICK_DRAW_CHANCE:
             n.hostile_since = -1
             self.say(f"{self.label(n)} draws a {n.weapon} and fires!", "danger")
         else:
@@ -394,7 +399,7 @@ class Game:
             n.dropped_item = None
 
     def neutralize(self, n: NPC, by: str) -> None:
-        if self.rng.random() < T.KILL_CHANCE:
+        if self.rng.random() < self.T.KILL_CHANCE:
             n.state = DEAD
             self.say(f"  {self.label(n)} is killed.", "alert")
         else:
@@ -416,7 +421,7 @@ class Game:
 
     def quiet_noise(self, room_id: str) -> None:
         for n in self.room_npcs(room_id):
-            if n.state == UNAWARE and self.rng.random() < T.QUIET_ALERT_CHANCE:
+            if n.state == UNAWARE and self.rng.random() < self.T.QUIET_ALERT_CHANCE:
                 n.state = ALERT
 
     def npc_move(self, n: NPC, allow_team_room: bool) -> bool:
@@ -441,7 +446,7 @@ class Game:
         elif dest == self.team_room:
             self.say(f"Contact! {self.label(n)} comes through the {d.name}!", "danger")
             self.rooms[dest].cleared = False
-            if n.weapon and self.rng.random() < n.aggression * T.FLANK_HOSTILE_CHANCE:
+            if n.weapon and self.rng.random() < n.aggression * self.T.FLANK_HOSTILE_CHANCE:
                 self.go_hostile(n)
         return True
 
@@ -449,13 +454,13 @@ class Game:
         trap, d.trap = d.trap, None
         if trap == "flash":
             self.say("BANG! A flashbang rigged to the door goes off in your face!", "danger")
-            self.disoriented = T.TRAP_FLASH_DISORIENT
+            self.disoriented = self.T.TRAP_FLASH_DISORIENT
         else:
             self.say("BOOM! The door was rigged with an explosive!", "danger")
             standing = [o for o in self.officers if not o.down]
             for o in self.rng.sample(standing, min(len(standing),
-                                                   self.rng.randint(*T.TRAP_EXPLOSIVE_VICTIMS))):
-                self.damage_officer(o, self.rng.randint(*T.TRAP_EXPLOSIVE_DAMAGE))
+                                                   self.rng.randint(*self.T.TRAP_EXPLOSIVE_VICTIMS))):
+                self.damage_officer(o, self.rng.randint(*self.T.TRAP_EXPLOSIVE_DAMAGE))
                 if self.over:
                     return
         self.noise(self.team_room, None)
@@ -510,7 +515,7 @@ class Game:
             self.say(f"The {d.name} isn't locked.", "info")
             return False, False
         self.say(f"Picking the lock on the {d.name}...", "info")
-        for _ in range(T.PICK_TICKS - 1):
+        for _ in range(self.T.PICK_TICKS - 1):
             self.tick()
             if self.over:
                 return False, False
@@ -525,8 +530,8 @@ class Game:
             return False, False
         d.wedged = False
         dest = d.other(self.team_room)
-        self.noise(self.team_room, T.LOUD_RADIUS)
-        if d.locked and self.rng.random() >= T.KICK_CHANCE:
+        self.noise(self.team_room, self.T.LOUD_RADIUS)
+        if d.locked and self.rng.random() >= self.T.KICK_CHANCE:
             d.lock_known = True
             self.say(f"You kick the {d.name}. It holds!", "warn")
             return False, True
@@ -554,11 +559,11 @@ class Game:
         d.state, d.locked = "broken", False
         for n in self.room_npcs(dest):
             if n.alive:
-                self.stun(n, T.C2_STUN, T.GRENADES["flashbang"]["comply_bonus"])
-                if n.state not in (RESTRAINED, INCAPACITATED) and self.rng.random() < T.C2_INJURE_CHANCE:
+                self.stun(n, self.T.C2_STUN, self.T.GRENADES["flashbang"]["comply_bonus"])
+                if n.state not in (RESTRAINED, INCAPACITATED) and self.rng.random() < self.T.C2_INJURE_CHANCE:
                     n.injured = True
                     if n.kind == "civilian":
-                        self.penalize(f"Civilian injured by breach ({n.desc})", T.PENALTY_CIVILIAN_INJURED)
+                        self.penalize(f"Civilian injured by breach ({n.desc})", self.T.PENALTY_CIVILIAN_INJURED)
         self.noise(self.team_room, None)
         self.reveal_room(dest, "Through the smoke")
         return True, True
@@ -566,13 +571,13 @@ class Game:
     def stun(self, n: NPC, ticks: int, bonus: float) -> None:
         # Aggressive suspects sometimes see it coming and cover up.
         if (n.kind == "suspect" and n.active
-                and self.rng.random() < n.aggression * T.STUN_RESIST_CHANCE):
+                and self.rng.random() < n.aggression * self.T.STUN_RESIST_CHANCE):
             return
         n.stunned = max(n.stunned, ticks)
         n.stun_bonus = max(n.stun_bonus, bonus)
 
     def apply_grenade(self, kind: str, room_id: str) -> None:
-        g = T.GRENADES[kind]
+        g = self.T.GRENADES[kind]
         room = self.rooms[room_id]
         self.say({"flashbang": f"BANG! Flashbang goes off in the {room.name}.",
                   "stinger": f"CRACK! Stinger rounds pepper the {room.name}.",
@@ -584,9 +589,9 @@ class Game:
             if n.state not in (RESTRAINED, INCAPACITATED) and self.rng.random() < g["injure"]:
                 n.injured = True
                 if n.kind == "civilian":
-                    self.penalize(f"Civilian injured by stinger ({n.desc})", T.PENALTY_CIVILIAN_INJURED)
+                    self.penalize(f"Civilian injured by stinger ({n.desc})", self.T.PENALTY_CIVILIAN_INJURED)
         if g["loud"]:
-            self.noise(room_id, T.LOUD_RADIUS)
+            self.noise(room_id, self.T.LOUD_RADIUS)
 
     def enter(self, dest: str, via: Door) -> None:
         self.team_room = dest
@@ -597,7 +602,7 @@ class Game:
         self.cmd_look([])
         for n in self.room_npcs(dest):
             if (n.state == ALERT and n.kind == "suspect" and n.weapon and not n.stunned
-                    and self.rng.random() < n.aggression * T.AMBUSH_CHANCE):
+                    and self.rng.random() < n.aggression * self.T.AMBUSH_CHANCE):
                 self.say(f"Contact! {self.label(n)} was waiting for you!", "danger")
                 self.go_hostile(n, immediate=True)
 
@@ -649,7 +654,7 @@ class Game:
     def cmd_status(self, args) -> bool:
         self.say(f"Mission clock {self.clock}", "title")
         for o in self.officers:
-            style = "danger" if o.down else ("warn" if o.hp < T.OFFICER_HP else "info")
+            style = "danger" if o.down else ("warn" if o.hp < self.T.OFFICER_HP else "info")
             self.say(f"  {o.name:<11} {o.hp:>3} HP  {o.status}", style)
         self.say("  Gear: " + ", ".join(f"{k} x{v}" for k, v in self.inv.items())
                  + ", taser, zip-ties", "info")
@@ -708,11 +713,12 @@ class Game:
         self.reveal_room(dest, "  Under the door")
         for n in self.room_npcs(dest):
             if (n.state == ALERT and n.kind == "suspect" and n.weapon_visible and not n.stunned
-                    and self.rng.random() < n.aggression * T.MIRROR_SPOTTED_CHANCE):
+                    and self.rng.random() < n.aggression * self.T.MIRROR_SPOTTED_CHANCE):
                 self.say(f"{self.label(n)} spots the mirror and fires through the door!", "danger")
                 target = self.pick_target()
-                w = T.WEAPONS[n.weapon]
-                if self.rng.random() < w["accuracy"] * T.THROUGH_DOOR_ACCURACY:
+                w = self.T.WEAPONS[n.weapon]
+                if self.rng.random() < (w["accuracy"] * self.T.SUSPECT_ACCURACY_MULT
+                                         * self.T.THROUGH_DOOR_ACCURACY):
                     self.damage_officer(target, self.rng.randint(*w["damage"]))
                 else:
                     self.say("  Splinters fly. Nobody's hit.", "warn")
@@ -769,7 +775,7 @@ class Game:
         if not (d.trap and d.trap_known):
             self.say("You haven't spotted a trap on that door. Mirror it first.", "warn")
             return False
-        if self.rng.random() < T.DISARM_FAIL_CHANCE:
+        if self.rng.random() < self.T.DISARM_FAIL_CHANCE:
             self.say("You cut the wrong wire...", "danger")
             self.trigger_trap(d)
             return True
@@ -842,19 +848,21 @@ class Game:
 
     def comply_chance(self, n: NPC) -> float:
         p = 1 - n.resistance
+        if n.kind == "suspect":
+            p -= self.T.SUSPECT_RESISTANCE_BONUS
         if n.stunned:
             p += n.stun_bonus
         if n.state == UNAWARE:
-            p += T.SURPRISE_BONUS
+            p += self.T.SURPRISE_BONUS
         if n.state == HOSTILE:
-            p -= T.HOSTILE_PENALTY
+            p -= self.T.HOSTILE_PENALTY
         if n.injured:
-            p += T.INJURED_BONUS
-        p += min(n.yells, T.MAX_YELL_STACK) * T.YELL_STACK_BONUS
+            p += self.T.INJURED_BONUS
+        p += min(n.yells, self.T.MAX_YELL_STACK) * self.T.YELL_STACK_BONUS
         if n.kind == "suspect":
-            p += self.suspects_down() * T.MORALE_PER_DOWN
+            p += self.suspects_down() * self.T.MORALE_PER_DOWN
         if self.disoriented:
-            p -= T.DISORIENTED_PENALTY
+            p -= self.T.DISORIENTED_PENALTY
         return max(0.02, min(0.98, p))
 
     def surrender(self, n: NPC) -> None:
@@ -879,7 +887,7 @@ class Game:
             self.say("Everyone here is complying." if anyone else "No one here.", "dim")
             return True
         for n in targets:
-            p = self.comply_chance(n) + (T.FOCUSED_YELL_BONUS if focus else 0)
+            p = self.comply_chance(n) + (self.T.FOCUSED_YELL_BONUS if focus else 0)
             n.yells += 1
             if self.rng.random() < p:
                 self.surrender(n)
@@ -887,7 +895,7 @@ class Game:
             if n.stunned:
                 self.say(f"{self.label(n)} is staggering and doesn't respond.", "warn")
             elif n.kind == "civilian":
-                if self.rng.random() < T.CIV_FLEE_CHANCE and self.npc_move(n, allow_team_room=False):
+                if self.rng.random() < self.T.CIV_FLEE_CHANCE and self.npc_move(n, allow_team_room=False):
                     pass
                 else:
                     self.say(f"{self.label(n)} panics and won't get down.", "warn")
@@ -897,7 +905,7 @@ class Game:
                 r = self.rng.random()
                 if n.weapon and r < n.aggression and n.state != HOSTILE:
                     self.go_hostile(n)
-                elif (r < n.aggression + (1 - n.aggression) * T.SUSPECT_FLEE_CHANCE
+                elif (r < n.aggression + (1 - n.aggression) * self.T.SUSPECT_FLEE_CHANCE
                       and self.npc_move(n, allow_team_room=False)):
                     pass
                 else:
@@ -914,7 +922,7 @@ class Game:
             self.say("They're already dead.", "warn")
             return False
         authorized = self.deadly_authorized(n)
-        acc = T.PLAYER_ACCURACY * (T.DISORIENTED_ACCURACY if self.disoriented else 1)
+        acc = self.T.PLAYER_ACCURACY * (self.T.DISORIENTED_ACCURACY if self.disoriented else 1)
         self.say(f"You fire on {self.label(n)}.", "alert")
         self.noise(self.team_room, None)
         if self.rng.random() >= acc:
@@ -923,9 +931,9 @@ class Game:
         was_civ = n.kind == "civilian"
         self.neutralize(n, by="player")
         if not authorized:
-            self.penalize(f"Unauthorized use of deadly force ({n.desc})", T.PENALTY_UNAUTHORIZED_DEADLY)
+            self.penalize(f"Unauthorized use of deadly force ({n.desc})", self.T.PENALTY_UNAUTHORIZED_DEADLY)
         if was_civ and n.state == DEAD:
-            self.penalize(f"Civilian killed ({n.desc})", T.PENALTY_CIVILIAN_KILLED)
+            self.penalize(f"Civilian killed ({n.desc})", self.T.PENALTY_CIVILIAN_KILLED)
         return True
 
     def cmd_taser(self, args) -> bool:
@@ -937,16 +945,16 @@ class Game:
             return False
         authorized = n.active
         self.say(f"You fire the taser at {self.label(n)}.", "alert")
-        if self.rng.random() >= T.TASER_ACCURACY:
+        if self.rng.random() >= self.T.TASER_ACCURACY:
             self.say("  The probes miss.", "warn")
             return True
         if not authorized:
-            self.penalize(f"Unauthorized use of force ({n.desc})", T.PENALTY_UNAUTHORIZED_FORCE)
+            self.penalize(f"Unauthorized use of force ({n.desc})", self.T.PENALTY_UNAUTHORIZED_FORCE)
         if n.state in (RESTRAINED, INCAPACITATED):
             self.say("  They twitch on the floor.", "info")
             return True
         n.state = SURRENDERED
-        n.stunned = max(n.stunned, T.TASER_STUN)
+        n.stunned = max(n.stunned, self.T.TASER_STUN)
         self.say(f"  {self.label(n)} locks up and drops.", "good")
         self.drop_weapon(n)
         return True

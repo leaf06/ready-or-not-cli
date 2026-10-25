@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from . import tuning as T
 
 # NPC states
 UNAWARE, ALERT, HOSTILE = "unaware", "alert", "hostile"
@@ -99,7 +98,8 @@ class Item:
 @dataclass
 class Officer:
     name: str
-    hp: int = T.OFFICER_HP
+    hp: int = 100
+    max_hp: int = 100
     is_player: bool = False
 
     @property
@@ -110,7 +110,7 @@ class Officer:
     def status(self) -> str:
         if self.down:
             return "DOWN"
-        if self.hp < T.OFFICER_HP:
+        if self.hp < self.max_hp:
             return "injured"
         return "healthy"
 

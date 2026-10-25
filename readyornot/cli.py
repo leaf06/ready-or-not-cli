@@ -52,11 +52,21 @@ def flush(game: Game) -> None:
         out(text, style)
 
 
-def play(scenario_id: str, seed: Optional[int]) -> None:
+def choose_difficulty() -> str:
+    keys = list(T.DIFFICULTIES)
+    out("\nChoose a difficulty:", "title")
+    idx = choose("Difficulty > ", [f"{T.DIFFICULTIES[k]['label']}: {T.DIFFICULTIES[k]['desc']}"
+                                   for k in keys])
+    return keys[idx]
+
+
+def play(scenario_id: str, seed: Optional[int], difficulty: Optional[str] = None) -> None:
     scn = load_scenario(scenario_id)
+    difficulty = difficulty or choose_difficulty()
+    cfg = T.settings(difficulty)
     rule()
     out(f"{scn.title}: {scn.subtitle}", "title")
-    out(f"Difficulty: {scn.difficulty}", "dim")
+    out(f"Scenario rating: {scn.difficulty} · Playing on {T.DIFFICULTIES[difficulty]['label']}", "dim")
     rule()
     for para in scn.briefing:
         out(para, "radio")
@@ -66,16 +76,16 @@ def play(scenario_id: str, seed: Optional[int]) -> None:
     out("Choose your entry point:", "title")
     entry = entries[choose("Entry > ", [f"{r.name}: {r.desc}" for r in entries])].id
 
-    keys = list(T.LOADOUTS)
+    keys = list(cfg.LOADOUTS)
     out("\nChoose a loadout (everyone carries a rifle, a taser, a mirror gun and zip-ties):", "title")
     labels = []
     for k in keys:
-        lo = T.LOADOUTS[k]
+        lo = cfg.LOADOUTS[k]
         gear = ", ".join(f"{n} x{c}" for n, c in lo["items"].items())
         labels.append(f"{lo['label']}: {lo['desc']} ({gear})")
     loadout = keys[choose("Loadout > ", labels)]
 
-    game = Game(scn, loadout, entry, seed=seed)
+    game = Game(scn, loadout, entry, seed=seed, difficulty=difficulty)
     out()
     out('TOC: "All elements, you are cleared to go. Good luck."', "radio")
     out("Type 'help' for commands.", "dim")
@@ -106,7 +116,7 @@ def debrief(game: Game) -> None:
     headline = {"complete": "MISSION COMPLETE", "incomplete": "MISSION ENDED: objectives incomplete",
                 "kia": "MISSION FAILED: element lead KIA"}[game.outcome]
     out(headline, "danger" if game.outcome == "kia" else "title")
-    out(f"Time on target: {game.clock}", "dim")
+    out(f"Time on target: {game.clock} · {T.DIFFICULTIES[game.difficulty]['label']}", "dim")
     rule("title")
     for label, pts, mx in result["rows"]:
         out(f"  {label:<44} {pts:>3} / {mx}", "good" if pts == mx else "info")
@@ -150,6 +160,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--seed", type=int, help="fix the random seed (repeatable runs, for tuning)")
     ap.add_argument("--no-color", action="store_true", help="disable ANSI colours")
     ap.add_argument("--scenario", help="skip the menu and start this scenario id")
+    ap.add_argument("--difficulty", choices=list(T.DIFFICULTIES),
+                    help="skip the difficulty prompt")
     args = ap.parse_args(argv)
     if args.no_color:
         set_color(False)
@@ -158,7 +170,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         out(TITLE, "danger")
         out(f"  v{__version__}", "dim")
         if args.scenario:
-            play(args.scenario, args.seed)
+            play(args.scenario, args.seed, args.difficulty)
             return 0
         while True:
             out()
@@ -168,7 +180,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 out("\nScenarios:", "title")
                 idx = choose("Scenario > ", [f"{s['title']}: {s['subtitle']} [{s['difficulty']}]"
                                              for s in scns])
-                play(scns[idx]["id"], args.seed)
+                play(scns[idx]["id"], args.seed, args.difficulty)
             elif pick == 1:
                 how_to_play()
             else:

@@ -3,19 +3,19 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from . import tuning as T
 from .engine import Game
 from .model import DEAD, RESTRAINED
 
 
-def grade_for(score: int) -> str:
-    for threshold, letter in T.GRADES:
+def grade_for(score: int, grades) -> str:
+    for threshold, letter in grades:
         if score >= threshold:
             return letter
     return "F"
 
 
 def score(game: Game) -> dict:
+    T = game.T
     sus = [n for n in game.npcs if n.kind == "suspect"]
     rows: List[Tuple[str, int, int]] = []
 
@@ -44,7 +44,7 @@ def score(game: Game) -> dict:
                  round(T.SCORE_EVIDENCE * bagged / len(items)) if items else T.SCORE_EVIDENCE,
                  T.SCORE_EVIDENCE))
 
-    hurt = sum(1 for o in game.officers if 0 < o.hp < T.OFFICER_HP)
+    hurt = sum(1 for o in game.officers if 0 < o.hp < o.max_hp)
     down = sum(1 for o in game.officers if o.down)
     team = max(0, T.SCORE_TEAM - hurt * T.TEAM_INJURED_COST - down * T.TEAM_DOWN_COST)
     team = round(team * done_frac)
@@ -62,7 +62,7 @@ def score(game: Game) -> dict:
         "rows": rows,
         "penalties": game.penalties,
         "total": total,
-        "grade": "F" if game.outcome == "kia" else grade_for(total),
+        "grade": "F" if game.outcome == "kia" else grade_for(total, T.GRADES),
         "suspects_arrested": arrested,
         "suspects_killed": sum(n.state == DEAD for n in sus),
         "civilians_rescued": sum(n.state == RESTRAINED for n in game.npcs if n.kind == "civilian"),
