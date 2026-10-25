@@ -2,8 +2,11 @@
 
 Everything here returns plain lists of strings. The engine only queues
 markers ("scene", "fx", "mirror"); the CLI turns them into art, so the
-rules stay free of presentation. Keep every line within MAX_WIDTH so the
-game still fits a phone screen.
+rules stay free of presentation.
+
+Two sizes: detailed scenes (up to DETAILED_WIDTH, for an 80-column
+terminal) with people drawn standing on the floor, and compact scenes
+(up to MAX_WIDTH, for phones) with people in a strip underneath.
 """
 from __future__ import annotations
 
@@ -12,8 +15,11 @@ from typing import Dict, List
 
 from .model import ALERT, DEAD, HOSTILE, INCAPACITATED, RESTRAINED, SURRENDERED, UNAWARE, NPC
 
-MAX_WIDTH = 58
-CELL = 9  # columns per person in the people strip
+MAX_WIDTH = 58        # compact art, and everything else drawn here
+DETAILED_WIDTH = 78   # detailed scenes
+STAGE_ROWS = 6        # the last rows of a detailed scene are its floor
+STAGE_LEFT, STAGE_RIGHT = 14, 64  # floor columns clear of the side walls
+CELL = 9  # columns per person
 PER_ROW = MAX_WIDTH // CELL
 
 
@@ -70,23 +76,54 @@ def figure(n: NPC):
     return "standing", {UNAWARE: "unaware", ALERT: "alert"}.get(n.state, n.state)
 
 
+def person(n: NPC) -> List[str]:
+    """One person as STAGE_ROWS rows of CELL columns: stun, figure, tag, label."""
+    key, label = figure(n)
+    stunned = n.stunned and n.alive and n.state != RESTRAINED
+    return ["  * * *  " if stunned else " " * CELL,
+            *FIGURES[key],
+            f" [{n.tag}]".ljust(CELL),
+            f" {label}"[:CELL].ljust(CELL)]
+
+
 def people_strip(npcs: List[NPC]) -> List[str]:
     out: List[str] = []
     for start in range(0, len(npcs), PER_ROW):
-        row = npcs[start:start + PER_ROW]
-        stun = "".join(("  * * *  " if n.stunned and n.alive and n.state != RESTRAINED
-                        else " " * CELL) for n in row)
-        if stun.strip():
-            out.append(stun.rstrip())
-        figs = [figure(n) for n in row]
-        for i in range(3):
-            out.append("".join(FIGURES[key][i] for key, _ in figs).rstrip())
-        out.append("".join(f" [{n.tag}]".ljust(CELL) for n in row).rstrip())
-        out.append("".join(f" {label}"[:CELL].ljust(CELL) for _, label in figs).rstrip())
+        cells = [person(n) for n in npcs[start:start + PER_ROW]]
+        for i in range(STAGE_ROWS):
+            line = "".join(c[i] for c in cells).rstrip()
+            if line or i:  # skip an empty stun row
+                out.append(line)
     return out
 
 
-def scene(room_art: List[str], npcs: List[NPC]) -> List[str]:
+def stage(room_art: List[str], npcs: List[NPC]) -> List[str]:
+    """Draw people standing on the floor of a detailed scene.
+
+    Anyone who doesn't fit across the floor goes in a strip underneath.
+    """
+    lines = [l.ljust(DETAILED_WIDTH) for l in room_art]
+    floor = (STAGE_RIGHT - STAGE_LEFT) // (CELL + 1)
+    here, extra = npcs[:floor], npcs[floor:]
+    if here and len(lines) >= STAGE_ROWS:
+        gap = (STAGE_RIGHT - STAGE_LEFT) // len(here)
+        top = len(lines) - STAGE_ROWS
+        for i, n in enumerate(here):
+            col = STAGE_LEFT + gap * i + (gap - CELL) // 2
+            for r, cell in enumerate(person(n)):
+                if cell.strip():  # blank rows let the floor show through
+                    row = lines[top + r]
+                    lines[top + r] = row[:col] + cell + row[col + CELL:]
+    lines = [l.rstrip() for l in lines]
+    if extra:
+        lines.append("")
+        lines.extend(people_strip(extra))
+    return lines
+
+
+def scene(room_art: List[str], npcs: List[NPC], detailed: bool = False) -> List[str]:
+    if detailed:
+        return [l[:DETAILED_WIDTH] for l in stage(room_art, npcs)]
     lines = list(room_art)
     if npcs:
         lines.append("")
