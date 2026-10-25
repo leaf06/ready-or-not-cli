@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 UNAWARE, ALERT, HOSTILE = "unaware", "alert", "hostile"
 SURRENDERED, RESTRAINED = "surrendered", "restrained"
 INCAPACITATED, DEAD = "incapacitated", "dead"
+ESCAPED = "escaped"             # got out of the building; no longer in any room
 ACTIVE_STATES = (UNAWARE, ALERT, HOSTILE)
 
 
@@ -35,6 +36,7 @@ class Door:
     trap: Optional[str] = None  # "flash" | "explosive"
     state: str = "closed"       # closed | open | broken
     wedged: bool = False
+    escape: bool = False        # suspects who reach this door can flee through it
     lock_known: bool = False
     trap_known: bool = False
 
@@ -56,6 +58,8 @@ class NPC:
     weapon: Optional[str] = None
     concealed: bool = False     # weapon hidden until they draw it or are searched
     bound: bool = False         # tied up: starts compliant, never resists or runs
+    minor: bool = False         # juvenile: deadly force is never authorized
+    escapes: bool = False       # once alerted, heads for an escape door
     resistance: float = 0.4
     aggression: float = 0.0
     state: str = UNAWARE

@@ -1,0 +1,72 @@
+{
+  "id": "nuke_lab",
+  "title": "Delta Bottling Co.",
+  "subtitle": "Nuke lab raid (a RoboCop 2 homage)",
+  "difficulty": "Hard",
+  "briefing": [
+    "TOC: Element, Old Detroit. Narcotics traced the new street drug, Nuke, to a shut-down bottling plant on the east side. It's the cult's main packaging operation, and Cain himself has been seen going in.",
+    "Expect a lookout watching the cameras up front, an armed enforcer on the packing floor, a guard on the loading dock, and a chemist working out of a camper trailer parked inside the plant. Informants say the trailer is rigged to blow if anyone forces it. Workers on the floor are being held there, so treat them as civilians.",
+    "Cain and his lieutenant Angie run things from the glass office up on the catwalk. A juvenile named Hob runs errands for them and carries a large-caliber pistol. Hear this clearly: deadly force is NOT authorized against the juvenile under any circumstances. Use less-lethal or talk him down.",
+    "Once the shooting starts, Cain, Angie and Hob will run for the loading dock, where a van is waiting in the back alley. If they get out that door, they're gone. Wedge it, hold it, or beat them to it.",
+    "Objectives: arrest or neutralize every suspect, rescue the workers, and secure the Nuke batch, the cash and the shipping manifest. Report everyone to TOC. Rules of engagement: deadly force only against a suspect who is visibly armed and not surrendering. Bring order to chaos."
+  ],
+  "rooms": [
+    {"id": "street", "name": "Street", "floor": "Exterior", "outdoor": true, "entry": true,
+     "desc": "A dead block of Old Detroit. Rain on the asphalt, a burned-out car, and a 'Delta Bottling Co.' sign hanging by one bolt over a steel front door."},
+    {"id": "alley", "name": "Back Alley", "floor": "Exterior", "outdoor": true, "entry": true,
+     "desc": "A narrow alley behind the plant. A dark van idles by the roll-up loading dock door with its lights off."},
+    {"id": "front_office", "name": "Front Office", "floor": "Ground",
+     "desc": "The old reception office. A swivel chair faces a bank of CCTV monitors showing the street, the floor and the dock."},
+    {"id": "floor", "name": "Packing Floor", "floor": "Ground",
+     "desc": "Rows of folding tables under work lights, covered in red vials, caps and cases stamped with the Nuke logo. A camper trailer is parked against the far wall, and steel stairs climb to a catwalk."},
+    {"id": "trailer", "name": "Lab Trailer", "floor": "Ground",
+     "desc": "A gutted camper with foil over the windows. Glassware, burners, and a drum of something that glows faintly red."},
+    {"id": "catwalk", "name": "Catwalk", "floor": "Upper",
+     "desc": "A steel catwalk over the packing floor. A glass-walled office sits at one end, and stairs drop down to the loading dock."},
+    {"id": "office", "name": "Cain's Office", "floor": "Upper",
+     "desc": "A glass office looking down on the floor. A leather chair, a cult shrine of candles and vials, and an open floor safe stuffed with cash."},
+    {"id": "breakroom", "name": "Break Room", "floor": "Ground",
+     "desc": "A break room turned into a kid's hangout: a busted pinball machine, cartoons on a portable TV, and candy wrappers everywhere."},
+    {"id": "dock", "name": "Loading Dock", "floor": "Ground",
+     "desc": "Pallets of shrink-wrapped Nuke cases waiting to ship. A roll-up door opens onto the back alley."}
+  ],
+  "doors": [
+    {"id": "front_door", "a": "street", "b": "front_office", "name": "front door", "locked": true},
+    {"id": "dock_door", "a": "alley", "b": "dock", "name": "loading dock door", "locked": true, "escape": true},
+    {"id": "side_alley", "a": "street", "b": "alley", "name": "side alley", "kind": "opening"},
+    {"id": "warehouse_door", "a": "front_office", "b": "floor", "name": "warehouse door"},
+    {"id": "trailer_door", "a": "floor", "b": "trailer", "name": "trailer door", "trap": "explosive"},
+    {"id": "catwalk_stairs", "a": "floor", "b": "catwalk", "name": "catwalk stairs", "kind": "opening"},
+    {"id": "break_door", "a": "floor", "b": "breakroom", "name": "break room door"},
+    {"id": "office_door", "a": "catwalk", "b": "office", "name": "office door", "locked": true},
+    {"id": "dock_stairs", "a": "catwalk", "b": "dock", "name": "dock stairs", "kind": "opening"},
+    {"id": "back_hall", "a": "breakroom", "b": "dock", "name": "back hall door"}
+  ],
+  "npcs": [
+    {"id": "lookout", "kind": "suspect", "desc": "lookout at the CCTV desk", "room": "front_office",
+     "weapon": "shotgun", "resistance": 0.70, "aggression": 0.60, "state": "alert"},
+    {"id": "enforcer", "kind": "suspect", "desc": "enforcer in a leather vest", "room": "floor",
+     "weapon": "smg", "resistance": 0.75, "aggression": 0.65},
+    {"id": "worker1", "kind": "civilian", "desc": "worker in a paper mask", "room": "floor",
+     "resistance": 0.30},
+    {"id": "worker2", "kind": "civilian", "desc": "worker in rubber gloves", "room": "floor",
+     "resistance": 0.40},
+    {"id": "worker3", "kind": "civilian", "desc": "worker with a hairnet", "room": "floor",
+     "resistance": 0.50},
+    {"id": "chemist", "kind": "suspect", "desc": "chemist in a stained lab coat", "room": "trailer",
+     "weapon": "pistol", "concealed": true, "resistance": 0.50, "aggression": 0.30},
+    {"id": "cain", "kind": "suspect", "desc": "Cain, in a long dark coat", "room": "office",
+     "weapon": "pistol", "concealed": true, "resistance": 0.85, "aggression": 0.70, "escapes": true},
+    {"id": "angie", "kind": "suspect", "desc": "Angie, Cain's lieutenant", "room": "office",
+     "weapon": "pistol", "resistance": 0.60, "aggression": 0.50, "escapes": true},
+    {"id": "hob", "kind": "suspect", "desc": "Hob, a kid in a ball cap", "room": "breakroom",
+     "weapon": "pistol", "resistance": 0.65, "aggression": 0.75, "minor": true, "escapes": true},
+    {"id": "dockguard", "kind": "suspect", "desc": "guard stacking pallets", "room": "dock",
+     "weapon": "rifle", "resistance": 0.70, "aggression": 0.60}
+  ],
+  "evidence": [
+    {"id": "batch", "name": "Nuke batch", "room": "trailer"},
+    {"id": "cash", "name": "drug money", "room": "office"},
+    {"id": "manifest", "name": "shipping manifest", "room": "dock"}
+  ]
+}

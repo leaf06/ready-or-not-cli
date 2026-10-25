@@ -1,12 +1,17 @@
-# Ready or Not: Terminal Tactical (v0.1.4)
+# Ready or Not: Terminal Tactical (v0.2.0)
 
 A turn-based, text-command SWAT game for the macOS Terminal, inspired by
 *Ready or Not*. You lead a five-officer element through a high-risk warrant.
 You mirror doors, breach, throw flashbangs, order suspects and civilians to
 comply, follow the rules of engagement, and get graded on how cleanly you did it.
 
-v0.1 ships one scenario, **4180 Larkspur Lane**, so the mechanics can be tuned
-before more content is added.
+Two scenarios so far:
+
+- **4180 Larkspur Lane** (Moderate): a narcotics warrant on a house with a basement drug lab.
+- **Delta Bottling Co.** (Hard): a raid on a Nuke packaging plant, an homage to the Nuke lab
+  raid in *RoboCop 2*. Cain, Angie and the juvenile Hob will run for the loading dock the
+  moment things get loud, and you can't use deadly force on Hob even when he's shooting at
+  you. Plan the dock before you plan the breach.
 
 ## Run it
 
@@ -96,6 +101,8 @@ already complied.
 - **Mirroring isn't free** (Medium and Hard). An alert, armed suspect may spot the mirror and fire blind through the door.
 - **Covering up** (Medium and Hard). Aggressive suspects sometimes see a grenade coming and aren't stunned. Check for `stunned` before you trust it.
 - **Point man.** On the turn you come through a door, you're the one most likely to be shot at.
+- **Runners** (Delta Bottling Co.). Some suspects head for an escape door once alerted. If they get out, they're gone and the objective fails. A wedged door, or the team standing outside it, stops them.
+- **Juveniles** (Delta Bottling Co.). Deadly force on a juvenile is never authorized, even if they're shooting at you. Tase them or talk them down. Their figures read `KID+GUN` / `KID AIMS`.
 - **Crits.** Some hits find a gap in the armor and ignore it. Walking into an unscouted room can kill you.
 - **Scarce kit.** On Medium and Hard, loadouts carry fewer grenades than there are rooms, so decide where they count.
 
@@ -128,6 +135,9 @@ Baseline on the current numbers (1,000 runs each):
 | Hard | 15% / 21% / 76.3 | 35% / 53.8 |
 
 The tactical bot plays close to perfectly, so expect human scores to be lower.
+Pass `--scenario nuke_lab` to simulate Delta Bottling Co. The bots don't plan
+for runners, so they rarely complete it. Wedging the dock first (from the
+alley) is what makes it winnable.
 
 ## Adding scenarios
 
@@ -137,7 +147,8 @@ template:
 
 - **rooms**: an `entry: true` room is a starting point, and `outdoor` rooms are off-limits to suspects
 - **doors**: `kind` is `door` or `opening`, plus optional `locked` and `trap` (`flash` / `explosive`)
-- **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon`, `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware` or `alert`)
+- **doors**: also optional `escape: true` for a door runners can flee through
+- **npcs**: `kind` is `suspect` or `civilian`. Also set `weapon` (`pistol`, `shotgun`, `rifle`, `smg`, `knife`), `concealed`, `resistance` (how hard they are to make comply), `aggression` (how likely they fight), and a starting `state` (`unaware`, `alert`, or `surrendered` with `bound: true` for someone tied up). `escapes: true` makes them run for an escape door, and `minor: true` makes deadly force against them unauthorized.
 - **evidence**: objective items to collect
 - **art** (optional): `<scenario_id>.art` holds the detailed scenes (up to 78 columns, with the last 6 rows kept clear as the floor where people stand), and `<scenario_id>.compact.art` holds the phone-sized ones (up to 58 columns). Each has one `== room_id ==` block per room. The tests check the widths, the clear floor and the exit labels.
 

@@ -89,6 +89,7 @@ WEAPONS = {
     "shotgun": {"accuracy": 0.60, "damage": (40, 65), "verb": "blasts a shotgun at"},
     "rifle":   {"accuracy": 0.55, "damage": (35, 55), "verb": "opens up with a rifle on"},
     "knife":   {"accuracy": 0.60, "damage": (20, 35), "verb": "lunges with a knife at"},
+    "smg":     {"accuracy": 0.55, "damage": (25, 40), "verb": "sprays an SMG at"},
 }
 INJURED_SUSPECT_ACCURACY = 0.60  # multiplier
 MIRROR_SPOTTED_CHANCE = 0.35    # x aggression: alert suspect spots your mirror and shoots through the door
@@ -99,6 +100,8 @@ QUICK_DRAW_CHANCE = 0.70       # x aggression: a suspect who refuses draws AND f
 FAKE_SURRENDER_CHANCE = 0.25    # x aggression: per tick, uncuffed suspect pulls a hidden weapon
 SURRENDER_LAPSE_CHANCE = 0.20   # per tick, an uncuffed suspect you left behind stops complying
 ROAM_CHANCE = 0.18              # per tick, an alert suspect moves to a neighbouring room
+ESCAPE_MOVE_CHANCE = 0.35       # per tick, an alerted runner moves a room closer to the exit
+ESCAPE_CHANCE = 0.50            # per tick, a runner at an unwedged escape door gets out
 FLANK_HOSTILE_CHANCE = 0.70     # x aggression: a roaming suspect walks in weapon-up
 
 # --- Scoring (max 100) ------------------------------------------------------
@@ -114,6 +117,7 @@ PENALTY_UNAUTHORIZED_FORCE = 5
 PENALTY_UNAUTHORIZED_DEADLY = 15
 PENALTY_CIVILIAN_KILLED = 20
 PENALTY_CIVILIAN_INJURED = 3
+PENALTY_DEADLY_JUVENILE = 20    # on top of unauthorized deadly force
 GRADES = [(95, "S"), (90, "A"), (80, "B"), (70, "C"), (60, "D"), (0, "F")]
 # Hard-only knobs (neutral on Easy and Medium).
 SUSPECT_ACCURACY_MULT = 1.0     # multiplier on every suspect weapon's accuracy

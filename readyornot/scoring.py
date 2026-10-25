@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import List, Tuple
 
 from .engine import Game
-from .model import DEAD, RESTRAINED
+from .model import DEAD, ESCAPED, RESTRAINED
 
 
 def grade_for(score: int, grades) -> str:
@@ -65,6 +65,7 @@ def score(game: Game) -> dict:
         "grade": "F" if game.outcome == "kia" else grade_for(total, T.GRADES),
         "suspects_arrested": arrested,
         "suspects_killed": sum(n.state == DEAD for n in sus),
+        "suspects_escaped": sum(n.state == ESCAPED for n in sus),
         "civilians_rescued": sum(n.state == RESTRAINED for n in game.npcs if n.kind == "civilian"),
         "civilians_dead": sum(n.state == DEAD for n in game.npcs if n.kind == "civilian"),
     }
